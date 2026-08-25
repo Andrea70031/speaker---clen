@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d12">
+<title>Speaker Clean</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #263653, #090b10 70%);
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+}
+
+.app {
+  max-width: 520px;
+  min-height: 100vh;
+  margin: auto;
+  padding: calc(30px + env(safe-area-inset-top)) 20px
+           calc(30px + env(safe-area-inset-bottom));
+  text-align: center;
+}
+
+h1 {
+  font-size: 34px;
+  margin: 0 0 5px;
+}
+
+.sub {
+  color: #aab4c5;
+  margin: 0 0 30px;
+}
+
+.card {
+  padding: 28px 20px;
+  border-radius: 28px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.1);
+  backdrop-filter: blur(10px);
+}
+
+.speaker {
+  width: 150px;
+  height: 150px;
+  margin: auto auto 25px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle,
+    #111 0 18%,
+    #344055 19% 28%,
+    #08090d 29% 58%,
+    #263042 59% 68%,
+    #050609 69%);
+  box-shadow: 0 0 45px rgba(80,130,255,.3);
+}
+
+.speaker.cleaning {
+  animation: pulse .18s infinite alternate;
+}
+
+@keyframes pulse {
+  to {
+    transform: scale(1.05);
+    box-shadow: 0 0 80px #5b8cff;
+  }
+}
+
+.status {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.timer {
+  font-size: 42px;
+  font-weight: bold;
+  margin: 10px 0 20px;
+}
+
+.modes {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.mode {
+  flex: 1;
+  border: 0;
+  border-radius: 15px;
+  padding: 14px 8px;
+  background: #202838;
+  color: white;
+  font-weight: bold;
+}
+
+.mode.active {
+  background: white;
+  color: black;
+}
+
+#main {
+  width: 100%;
+  border: 0;
+  border-radius: 20px;
+  padding: 19px;
+  font-size: 19px;
+  font-weight: bold;
+  color: white;
+  background: linear-gradient(135deg, #4d8cff, #875cff);
+  margin-bottom: 10px;
+}
+
+.bottom {
+  display: flex;
+  gap: 8px;
+}
+
+.small {
+  flex: 1;
+  border: 0;
+  border-radius: 15px;
+  padding: 14px 8px;
+  background: #202838;
+  color: white;
+  font-weight: bold;
+}
+
+.note {
+  color: #9ca8bb;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 22px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+  <h1>Speaker Clean</h1>
+  <p class="sub">Pulizia altoparlanti</p>
+
+  <div class="card">
+
+    <div id="speaker" class="speaker"></div>
+
+    <div id="status" class="status">Pronto</div>
+    <div id="timer" class="timer">00:30</div>
+
+    <div class="modes">
+      <button class="mode" data-mode="soft">Soft</button>
+      <button class="mode active" data-mode="normal">Normale</button>
+      <button class="mode" data-mode="power">Potente</button>
+    </div>
+
+    <button id="main">▶ Avvia pulizia</button>
+
+    <div class="bottom">
+      <button id="reset" class="small">↺ Reset</button>
+      <button id="test" class="small">🔊 Test audio</button>
+    </div>
+
+  </div>
+
+  <p class="note">
+    Alza il volume gradualmente. Interrompi se senti distorsioni.
+  </p>
+</div>
+
+<script>
+let ctx;
+let oscillator;
+let gain;
+let running = false;
+let timeLeft = 30;
+let timerInterval;
+let mode = "normal";
+let sweepTimeout;
+
+const settings = {
+  soft:   { start: 165, end: 115, volume: 0.35 },
+  normal: { start: 190, end: 120, volume: 0.65 },
+  power:  { start: 210, end: 105, volume: 0.9 }
+};
+
+const speaker = document.getElementById("speaker");
+const statusText = document.getElementById("status");
+const timer = document.getElementById("timer");
+const mainButton = document.getElementById("main");
+
+function updateTimer() {
+  timer.textContent = "00:" + String(timeLeft).padStart(2, "0");
+}
+
+function stopCleaning() {
+  running = false;
+
+  clearInterval(timerInterval);
+  clearTimeout(sweepTimeout);
+
+  if (oscillator) {
+    try {
+      oscillator.stop();
+    } catch (e) {}
+
+    oscillator.disconnect();
+    oscillator = null;
+  }
+
+  if (gain) {
+    gain.disconnect();
+    gain = null;
+  }
+
+  speaker.classList.remove("cleaning");
+  statusText.textContent = "Pronto";
+  mainButton.textContent = "▶ Avvia pulizia";
+
+  timeLeft = 30;
+  updateTimer();
+}
+
+function doSweep() {
+  if (!running || !oscillator || !ctx) return;
+
+  const config = settings[mode];
+  const now = ctx.currentTime;
+
+  oscillator.frequency.cancelScheduledValues(now);
+  oscillator.frequency.setValueAtTime(config.start, now);
+  oscillator.frequency.exponentialRampToValueAtTime(
+    config.end,
+    now + 3.5
+  );
+
+  sweepTimeout = setTimeout(doSweep, 3600);
+}
+
+function startCleaning() {
+
+  if (!ctx) {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+
+  ctx.resume();
+
+  const config = settings[mode];
+
+  gain = ctx.createGain();
+  gain.gain.value = 0.001;
+  gain.connect(ctx.destination);
+
+  oscillator = ctx.createOscillator();
+  oscillator.type = "sine";
+  oscillator.connect(gain);
+  oscillator.start();
+
+  const now = ctx.currentTime;
+  gain.gain.exponentialRampToValueAtTime(
+    config.volume,
+    now + 0.3
+  );
+
+  running = true;
+  doSweep();
+
+  speaker.classList.add("cleaning");
+  statusText.textContent = "Pulizia in corso";
+  mainButton.textContent = "■ Ferma";
+
+  timeLeft = 30;
+  updateTimer();
+
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimer();
+
+    if (timeLeft <= 0) {
+      stopCleaning();
+    }
+
+  }, 1000);
+}
+
+mainButton.addEventListener("click", () => {
+  if (running) {
+    stopCleaning();
+  } else {
+    startCleaning();
+  }
+});
+
+document.querySelectorAll(".mode").forEach(button => {
+
+  button.addEventListener("click", () => {
+
+    if (running) return;
+
+    document.querySelectorAll(".mode").forEach(b => {
+      b.classList.remove("active");
+    });
+
+    button.classList.add("active");
+    mode = button.dataset.mode;
+
+  });
+
+});
+
+document.getElementById("reset").addEventListener("click", () => {
+  stopCleaning();
+});
+
+document.getElementById("test").addEventListener("click", () => {
+
+  if (running) return;
+
+  if (!ctx) {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+
+  ctx.resume();
+
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+
+  osc.type = "sine";
+  osc.frequency.value = 180;
+  g.gain.value = 0.25;
+
+  osc.connect(g);
+  g.connect(ctx.destination);
+
+  osc.start();
+
+  setTimeout(() => {
+    osc.stop();
+    osc.disconnect();
+    g.disconnect();
+  }, 1000);
+
+});
+</script>
+
+</body>
+</html>
