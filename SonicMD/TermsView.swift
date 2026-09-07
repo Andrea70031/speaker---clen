@@ -18,7 +18,16 @@ struct TermsView: View {
                     Text("Le funzioni di pulizia non garantiscono la rimozione di acqua, polvere o altri contaminanti.")
                     Text("Non tenere il dispositivo vicino all’orecchio. Interrompi in caso di distorsioni o vibrazioni anomale.")
                     Text("Gli indici sono comparativi e non costituiscono una diagnosi hardware certificata.")
-                    Text("L’audio del microfono viene elaborato localmente in questa build.")
+                    Text("L’audio del microfono viene elaborato localmente sul dispositivo e non viene inviato a server esterni.")
+
+                    NavigationLink {
+                        PrivacyView()
+                    } label: {
+                        Label("Privacy Policy", systemImage: "hand.raised.fill")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
 
                     if requiredAcceptance {
                         Toggle(
