@@ -5,6 +5,8 @@
     <key>CFBundleDisplayName</key>
     <string>Sonic MD</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Sonic MD usa il microfono per confrontare localmente la risposta acustica dell'altoparlante prima e dopo una sessione.</string>
+    <string>Sonic MD usa il microfono per confrontare localmente la risposta acustica dell'altoparlante prima e dopo una sessione. L'audio non viene inviato a server esterni.</string>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
 </dict>
 </plist>
