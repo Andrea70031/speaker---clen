@@ -3,32 +3,82 @@ workflows:
     name: Sonic MD - iOS compile check
     max_build_duration: 60
     instance_type: mac_mini_m2
-
     environment:
       xcode: latest
-
     scripts:
       - name: Show Xcode version
-        script: |
-          xcodebuild -version
-
+        script: xcodebuild -version
       - name: Install XcodeGen
-        script: |
-          brew install xcodegen
-
+        script: brew install xcodegen
       - name: Generate Xcode project
         script: |
           cd "$CM_BUILD_DIR"
           xcodegen generate --spec project.yml
           xcodebuild -project SonicMD.xcodeproj -list
-
       - name: Build unsigned simulator app
         script: |
           set -o pipefail
           cd "$CM_BUILD_DIR"
-          xcodebuild build             -project SonicMD.xcodeproj             -scheme SonicMD             -sdk iphonesimulator             -destination 'generic/platform=iOS Simulator'             -configuration Debug             CODE_SIGN_IDENTITY=""             CODE_SIGNING_REQUIRED=NO             CODE_SIGNING_ALLOWED=NO             | tee /tmp/sonicmd-xcodebuild.log
-
+          xcodebuild build \
+            -project SonicMD.xcodeproj \
+            -scheme SonicMD \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee /tmp/sonicmd-xcodebuild.log
     artifacts:
       - /tmp/sonicmd-xcodebuild.log
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/Debug-iphonesimulator/*.app
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Logs/Build/**
+
+  ios-testflight:
+    name: Sonic MD 1.0 - TestFlight
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: codemagic
+    environment:
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.andrea70031.sonicmd
+      vars:
+        XCODE_PROJECT: "SonicMD.xcodeproj"
+        XCODE_SCHEME: "SonicMD"
+    scripts:
+      - name: Verify Xcode 26 or newer
+        script: |
+          xcodebuild -version
+          MAJOR=$(xcodebuild -version | head -1 | awk '{print int($2)}')
+          if [ "$MAJOR" -lt 26 ]; then
+            echo "Xcode 26 or newer is required for App Store uploads."
+            exit 1
+          fi
+      - name: Install XcodeGen
+        script: brew install xcodegen
+      - name: Generate Xcode project
+        script: |
+          cd "$CM_BUILD_DIR"
+          xcodegen generate --spec project.yml
+      - name: Apply signing profiles
+        script: |
+          cd "$CM_BUILD_DIR"
+          xcode-project use-profiles
+      - name: Build signed IPA
+        script: |
+          cd "$CM_BUILD_DIR"
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
