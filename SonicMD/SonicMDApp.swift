@@ -13,6 +13,11 @@ struct SonicMDApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(engine)
+                .safeAreaInset(edge: .bottom) {
+                    AdMobBannerView()
+                        .frame(height: 60)
+                        .background(.ultraThinMaterial)
+                }
         }
     }
 }
