@@ -19,6 +19,7 @@ targets:
       - path: SonicMD
     resources:
       - path: SonicMD/Assets.xcassets
+      - path: SonicMD/PrivacyInfo.xcprivacy
     info:
       path: SonicMD/Info.plist
     settings:

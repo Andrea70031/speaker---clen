@@ -8,8 +8,14 @@ workflows:
     scripts:
       - name: Show Xcode version
         script: xcodebuild -version
-      - name: Install XcodeGen
-        script: brew install xcodegen
+      - name: Install build tools
+        script: brew install xcodegen librsvg
+      - name: Generate App Store icon
+        script: |
+          cd "$CM_BUILD_DIR"
+          rsvg-convert -w 1024 -h 1024 \
+            SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.svg \
+            -o SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png
       - name: Generate Xcode project
         script: |
           cd "$CM_BUILD_DIR"
@@ -56,8 +62,14 @@ workflows:
             echo "Xcode 26 or newer is required for App Store uploads."
             exit 1
           fi
-      - name: Install XcodeGen
-        script: brew install xcodegen
+      - name: Install build tools
+        script: brew install xcodegen librsvg
+      - name: Generate App Store icon
+        script: |
+          cd "$CM_BUILD_DIR"
+          rsvg-convert -w 1024 -h 1024 \
+            SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.svg \
+            -o SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png
       - name: Generate Xcode project
         script: |
           cd "$CM_BUILD_DIR"

@@ -12,6 +12,7 @@ final class AcousticEngine: ObservableObject {
     @Published var deltaPercent: Double?
     @Published var beforeBands: [Float] = []
     @Published var afterBands: [Float] = []
+    @Published var microphonePermissionDenied = false
 
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
@@ -23,6 +24,7 @@ final class AcousticEngine: ObservableObject {
 
     func prepare() async throws {
         let granted = await requestMicrophonePermission()
+        microphonePermissionDenied = !granted
         guard granted else { throw AcousticError.microphoneDenied }
 
         try session.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker])
@@ -83,7 +85,7 @@ final class AcousticEngine: ObservableObject {
             try await prepare()
             isRunning = true
             progress = 0
-            status = reference ? "Misura inizialeâ¦" : "Misura di verificaâ¦"
+            status = reference ? "Misura iniziale…" : "Misura di verifica…"
 
             var bands: [Float] = []
 
@@ -117,6 +119,9 @@ final class AcousticEngine: ObservableObject {
             isRunning = false
         } catch {
             isRunning = false
+            if case AcousticError.microphoneDenied = error {
+                microphonePermissionDenied = true
+            }
             status = error.localizedDescription
         }
     }
@@ -140,7 +145,7 @@ final class AcousticEngine: ObservableObject {
     func waterRescue() async {
         await clean(
             name: "Water Rescue",
-            frequencies: [165,155,145,135,125,115,105,120,140,160],
+            frequencies: [165, 155, 145, 135, 125, 115, 105, 120, 140, 160],
             toneMilliseconds: 250,
             pauseMilliseconds: 65,
             amplitude: 0.48
@@ -150,7 +155,7 @@ final class AcousticEngine: ObservableObject {
     func dustRescue() async {
         await clean(
             name: "Dust Rescue",
-            frequencies: [120,210,145,240,130,190,110,225,155,200,125,250],
+            frequencies: [120, 210, 145, 240, 130, 190, 110, 225, 155, 200, 125, 250],
             toneMilliseconds: 115,
             pauseMilliseconds: 30,
             amplitude: 0.50
@@ -160,7 +165,7 @@ final class AcousticEngine: ObservableObject {
     func adaptiveClean() async {
         await clean(
             name: "Adaptive Clean",
-            frequencies: [110,140,180,220,250,205,165,125,235,150,195,115,245,175],
+            frequencies: [110, 140, 180, 220, 250, 205, 165, 125, 235, 150, 195, 115, 245, 175],
             toneMilliseconds: 145,
             pauseMilliseconds: 38,
             amplitude: 0.50
@@ -180,7 +185,7 @@ final class AcousticEngine: ObservableObject {
             try await prepare()
             isRunning = true
             progress = 0
-            status = "\(name) in corsoâ¦"
+            status = "\(name) in corso…"
 
             for (index, frequency) in frequencies.enumerated() {
                 playTone(
@@ -200,6 +205,9 @@ final class AcousticEngine: ObservableObject {
             status = "\(name) completato."
         } catch {
             isRunning = false
+            if case AcousticError.microphoneDenied = error {
+                microphonePermissionDenied = true
+            }
             status = error.localizedDescription
         }
     }
@@ -237,8 +245,7 @@ final class AcousticEngine: ObservableObject {
                 envelope = Float(Int(frameCount) - i) / Float(releaseFrames)
             }
 
-            samples[i] =
-                Float(sin(2.0 * Double.pi * frequency * time))
+            samples[i] = Float(sin(2.0 * Double.pi * frequency * time))
                 * amplitude
                 * max(0, envelope)
         }
@@ -266,7 +273,6 @@ final class AcousticEngine: ObservableObject {
         }
 
         let average = decibels.reduce(0, +) / Float(decibels.count)
-
         return Int(max(1, min(100, (average + 55) * 2.15)))
     }
 
@@ -277,7 +283,6 @@ final class AcousticEngine: ObservableObject {
         let afterAverage = after.reduce(0, +) / Float(after.count)
 
         guard beforeAverage > 0 else { return 0 }
-
         return Double((afterAverage - beforeAverage) / beforeAverage * 100)
     }
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
     @EnvironmentObject private var engine: AcousticEngine
@@ -6,6 +7,7 @@ struct ContentView: View {
     @State private var showTerms = false
     @State private var showHistory = false
     @State private var showGuide = false
+    @State private var showPrivacy = false
 
     var body: some View {
         NavigationStack {
@@ -43,6 +45,7 @@ struct ContentView: View {
                     } label: {
                         Image(systemName: "clock.arrow.circlepath")
                     }
+                    .accessibilityLabel("Cronologia")
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
@@ -50,12 +53,16 @@ struct ContentView: View {
                         Button("Guida rapida", systemImage: "questionmark.circle") {
                             showGuide = true
                         }
+                        Button("Privacy", systemImage: "hand.raised") {
+                            showPrivacy = true
+                        }
                         Button("Termini e sicurezza", systemImage: "shield") {
                             showTerms = true
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
                     }
+                    .accessibilityLabel("Altre opzioni")
                 }
             }
         }
@@ -71,6 +78,19 @@ struct ContentView: View {
         .sheet(isPresented: $showGuide) {
             QuickGuideView()
         }
+        .sheet(isPresented: $showPrivacy) {
+            PrivacyView()
+        }
+        .alert("Microfono necessario", isPresented: $engine.microphonePermissionDenied) {
+            Button("Annulla", role: .cancel) { }
+            Button("Apri Impostazioni") {
+                guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+                UIApplication.shared.open(url)
+            }
+        } message: {
+            Text("Sonic MD usa il microfono solo per misurazioni acustiche locali. Abilita l'accesso al microfono per utilizzare Smart Scan e Guided Clean.")
+        }
+        .sensoryFeedback(.success, trigger: engine.afterIndex)
         .onAppear {
             if !termsAccepted {
                 showTerms = true
@@ -82,17 +102,13 @@ struct ContentView: View {
                   let delta = engine.deltaPercent
             else { return }
 
-            SessionStore.shared.add(
-                before: before,
-                after: newValue,
-                delta: delta
-            )
+            SessionStore.shared.add(before: before, after: newValue, delta: delta)
         }
     }
 
     private var hero: some View {
         VStack(spacing: 14) {
-            Text("ACOUSTIC HEALTH SYSTEM")
+            Text("ACOUSTIC RESPONSE SYSTEM")
                 .font(.caption2.weight(.bold))
                 .tracking(1.6)
                 .foregroundStyle(.secondary)
@@ -100,18 +116,14 @@ struct ContentView: View {
             Text("Speaker Health")
                 .font(.system(size: 34, weight: .bold, design: .rounded))
 
-            Text("Analizza, pulisci e verifica la risposta del tuo iPhone.")
+            Text("Analizza, pulisci e confronta la risposta acustica del tuo iPhone.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
             ZStack {
-                Circle()
-                    .fill(.ultraThinMaterial)
-
-                Circle()
-                    .stroke(Color.primary.opacity(0.06), lineWidth: 12)
-
+                Circle().fill(.ultraThinMaterial)
+                Circle().stroke(Color.primary.opacity(0.06), lineWidth: 12)
                 Circle()
                     .trim(from: 0, to: max(engine.progress, engine.beforeIndex == nil ? 0.04 : 1))
                     .stroke(
@@ -144,12 +156,7 @@ struct ContentView: View {
                     text: engine.isRunning ? "Analisi in corso" : "Sistema pronto",
                     color: engine.isRunning ? .blue : .green
                 )
-
-                statusPill(
-                    icon: "speaker.wave.2.fill",
-                    text: "Speaker",
-                    color: .cyan
-                )
+                statusPill(icon: "speaker.wave.2.fill", text: "Speaker", color: .cyan)
             }
         }
         .padding(.top, 6)
@@ -157,18 +164,8 @@ struct ContentView: View {
 
     private var quickStatus: some View {
         HStack(spacing: 10) {
-            metricCard(
-                title: "PRIMA",
-                value: engine.beforeIndex.map(String.init) ?? "—",
-                icon: "circle.dashed"
-            )
-
-            metricCard(
-                title: "DOPO",
-                value: engine.afterIndex.map(String.init) ?? "—",
-                icon: "checkmark.circle"
-            )
-
+            metricCard(title: "PRIMA", value: engine.beforeIndex.map(String.init) ?? "—", icon: "circle.dashed")
+            metricCard(title: "DOPO", value: engine.afterIndex.map(String.init) ?? "—", icon: "checkmark.circle")
             metricCard(
                 title: "DELTA",
                 value: engine.deltaPercent.map { String(format: "%+.1f%%", $0) } ?? "—",
@@ -182,33 +179,25 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Smart Scan")
-                            .font(.title3.bold())
-
-                        Text("Misura la risposta locale e crea un riferimento.")
+                        Text("Smart Scan").font(.title3.bold())
+                        Text("Misura la risposta locale e crea un riferimento comparativo.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-
                     Spacer()
-
                     Image(systemName: "waveform.path.ecg")
                         .font(.title2)
                         .foregroundStyle(.blue)
                 }
 
-                ProgressView(value: engine.progress)
-                    .tint(.blue)
-
+                ProgressView(value: engine.progress).tint(.blue)
                 Text(engine.status)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 Button {
-                    Task {
-                        await engine.measure(reference: engine.beforeBands.isEmpty)
-                    }
+                    Task { await engine.measure(reference: engine.beforeBands.isEmpty) }
                 } label: {
                     Label(
                         engine.beforeBands.isEmpty ? "Avvia Smart Scan" : "Verifica risultato",
@@ -224,16 +213,12 @@ struct ContentView: View {
             .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
 
             Button {
-                Task {
-                    await engine.fullCycle()
-                }
+                Task { await engine.fullCycle() }
             } label: {
                 HStack(spacing: 12) {
-                    Image(systemName: "sparkles")
-                        .font(.title2)
+                    Image(systemName: "sparkles").font(.title2)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Guided Clean")
-                            .font(.headline)
+                        Text("Guided Clean").font(.headline)
                         Text("Scan → Adaptive Clean → verifica")
                             .font(.caption)
                             .opacity(0.82)
@@ -247,11 +232,7 @@ struct ContentView: View {
             .buttonStyle(.plain)
             .foregroundStyle(.white)
             .background(
-                LinearGradient(
-                    colors: [.blue, .indigo],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
+                LinearGradient(colors: [.blue, .indigo], startPoint: .topLeading, endPoint: .bottomTrailing),
                 in: RoundedRectangle(cornerRadius: 24, style: .continuous)
             )
             .shadow(color: .blue.opacity(0.18), radius: 20, y: 10)
@@ -262,30 +243,16 @@ struct ContentView: View {
     private var rescueSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Rescue Modes")
-                    .font(.title2.bold())
+                Text("Rescue Modes").font(.title2.bold())
                 Spacer()
-                Text("MANUALE")
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(.secondary)
+                Text("MANUALE").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
             }
 
             HStack(spacing: 10) {
-                rescueCard(
-                    title: "Water",
-                    subtitle: "Basse frequenze",
-                    icon: "drop.fill",
-                    tint: .cyan
-                ) {
+                rescueCard(title: "Water", subtitle: "Basse frequenze", icon: "drop.fill", tint: .cyan) {
                     Task { await engine.waterRescue() }
                 }
-
-                rescueCard(
-                    title: "Dust",
-                    subtitle: "Impulsi rapidi",
-                    icon: "sparkles",
-                    tint: .orange
-                ) {
+                rescueCard(title: "Dust", subtitle: "Impulsi rapidi", icon: "sparkles", tint: .orange) {
                     Task { await engine.dustRescue() }
                 }
             }
@@ -304,33 +271,14 @@ struct ContentView: View {
     private var insightsCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Label("Acoustic Insights", systemImage: "chart.xyaxis.line")
-                    .font(.headline)
+                Label("Acoustic Insights", systemImage: "chart.xyaxis.line").font(.headline)
                 Spacer()
-                Text("LOCAL")
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(.secondary)
+                Text("LOCAL").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
             }
-
             Divider()
-
-            insightRow(
-                icon: "mic.fill",
-                title: "Elaborazione",
-                value: "Sul dispositivo"
-            )
-
-            insightRow(
-                icon: "shield.checkered",
-                title: "Diagnosi",
-                value: "Comparativa"
-            )
-
-            insightRow(
-                icon: "waveform",
-                title: "Bande di test",
-                value: "8 frequenze"
-            )
+            insightRow(icon: "mic.fill", title: "Elaborazione", value: "Sul dispositivo")
+            insightRow(icon: "shield.checkered", title: "Misurazione", value: "Comparativa")
+            insightRow(icon: "waveform", title: "Bande di test", value: "8 frequenze")
         }
         .padding(18)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
@@ -338,10 +286,8 @@ struct ContentView: View {
 
     private var footer: some View {
         VStack(spacing: 8) {
-            Text("Sonic MD")
-                .font(.footnote.weight(.semibold))
-
-            Text("Misurazione acustica comparativa. Non sostituisce assistenza tecnica o diagnostica certificata.")
+            Text("Sonic MD").font(.footnote.weight(.semibold))
+            Text("Indice acustico comparativo. Non sostituisce assistenza tecnica o diagnostica certificata.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -359,11 +305,7 @@ struct ContentView: View {
         engine.beforeIndex == nil ? "NESSUN RIFERIMENTO" : "RESPONSE INDEX"
     }
 
-    private func statusPill(
-        icon: String,
-        text: String,
-        color: Color
-    ) -> some View {
+    private func statusPill(icon: String, text: String, color: Color) -> some View {
         Label(text, systemImage: icon)
             .font(.caption.weight(.semibold))
             .padding(.horizontal, 11)
@@ -372,23 +314,11 @@ struct ContentView: View {
             .foregroundStyle(color)
     }
 
-    private func metricCard(
-        title: String,
-        value: String,
-        icon: String
-    ) -> some View {
+    private func metricCard(title: String, value: String, icon: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: icon)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Text(value)
-                .font(.title3.bold())
-                .contentTransition(.numericText())
-
-            Text(title)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
+            Image(systemName: icon).font(.caption).foregroundStyle(.secondary)
+            Text(value).font(.title3.bold()).contentTransition(.numericText())
+            Text(title).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
@@ -409,20 +339,12 @@ struct ContentView: View {
                     .frame(width: 38, height: 38)
                     .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
                     .foregroundStyle(tint)
-
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(title)
-                        .font(.headline)
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text(title).font(.headline)
+                    Text(subtitle).font(.caption).foregroundStyle(.secondary)
                 }
-
                 Spacer()
-
-                Image(systemName: "play.fill")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Image(systemName: "play.fill").font(.caption).foregroundStyle(.secondary)
             }
             .padding(15)
             .frame(maxWidth: .infinity)
@@ -432,19 +354,11 @@ struct ContentView: View {
         .disabled(engine.isRunning)
     }
 
-    private func insightRow(
-        icon: String,
-        title: String,
-        value: String
-    ) -> some View {
+    private func insightRow(icon: String, title: String, value: String) -> some View {
         HStack {
-            Label(title, systemImage: icon)
-                .foregroundStyle(.secondary)
-
+            Label(title, systemImage: icon).foregroundStyle(.secondary)
             Spacer()
-
-            Text(value)
-                .font(.subheadline.weight(.semibold))
+            Text(value).font(.subheadline.weight(.semibold))
         }
         .font(.subheadline)
     }
