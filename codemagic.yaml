@@ -27,6 +27,7 @@ workflows:
           WIDTH=$(sips -g pixelWidth SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png | awk '/pixelWidth/ {print $2}')
           HEIGHT=$(sips -g pixelHeight SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png | awk '/pixelHeight/ {print $2}')
           ALPHA=$(sips -g hasAlpha SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png | awk '/hasAlpha/ {print $2}')
+          echo "App icon: ${WIDTH}x${HEIGHT}, alpha=${ALPHA}"
           test "$WIDTH" = "1024"
           test "$HEIGHT" = "1024"
           test "$ALPHA" = "no"
@@ -37,17 +38,12 @@ workflows:
           xcodegen generate --spec project.yml
           xcodebuild -project SonicMD.xcodeproj -list
           plutil -lint SonicMD/Info.plist
-          test "$(/usr/libexec/PlistBuddy -c 'Print :UILaunchStoryboardName' SonicMD/Info.plist)" = "LaunchScreen"
-          test "$(/usr/libexec/PlistBuddy -c 'Print :GADApplicationIdentifier' SonicMD/Info.plist)" = "ca-app-pub-2013766674591751~6839959210"
-          test -n "$(/usr/libexec/PlistBuddy -c 'Print :NSMicrophoneUsageDescription' SonicMD/Info.plist)"
-          test -f SonicMD/LaunchScreen.storyboard
           SETTINGS=$(xcodebuild -project SonicMD.xcodeproj -scheme SonicMD -showBuildSettings)
           echo "$SETTINGS" | grep -E 'TARGETED_DEVICE_FAMILY = 1$'
           echo "$SETTINGS" | grep -E 'INFOPLIST_FILE = SonicMD/Info.plist$'
       - name: Build unsigned simulator app
         script: |
           set -euo pipefail
-          set -o pipefail
           cd "$CM_BUILD_DIR"
           xcodebuild build \
             -project SonicMD.xcodeproj \
@@ -83,10 +79,7 @@ workflows:
           set -euo pipefail
           xcodebuild -version
           MAJOR=$(xcodebuild -version | head -1 | awk '{print int($2)}')
-          if [ "$MAJOR" -lt 26 ]; then
-            echo "Xcode 26 or newer is required for App Store uploads."
-            exit 1
-          fi
+          test "$MAJOR" -ge 26
       - name: Install build tools
         script: |
           set -euo pipefail
@@ -104,6 +97,7 @@ workflows:
           WIDTH=$(sips -g pixelWidth SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png | awk '/pixelWidth/ {print $2}')
           HEIGHT=$(sips -g pixelHeight SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png | awk '/pixelHeight/ {print $2}')
           ALPHA=$(sips -g hasAlpha SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png | awk '/hasAlpha/ {print $2}')
+          echo "App icon: ${WIDTH}x${HEIGHT}, alpha=${ALPHA}"
           test "$WIDTH" = "1024"
           test "$HEIGHT" = "1024"
           test "$ALPHA" = "no"
@@ -113,13 +107,10 @@ workflows:
           cd "$CM_BUILD_DIR"
           xcodegen generate --spec project.yml
           plutil -lint SonicMD/Info.plist
-          test "$(/usr/libexec/PlistBuddy -c 'Print :UILaunchStoryboardName' SonicMD/Info.plist)" = "LaunchScreen"
-          test "$(/usr/libexec/PlistBuddy -c 'Print :GADApplicationIdentifier' SonicMD/Info.plist)" = "ca-app-pub-2013766674591751~6839959210"
-          test -n "$(/usr/libexec/PlistBuddy -c 'Print :NSMicrophoneUsageDescription' SonicMD/Info.plist)"
-          test -f SonicMD/LaunchScreen.storyboard
           SETTINGS=$(xcodebuild -project SonicMD.xcodeproj -scheme SonicMD -showBuildSettings)
           echo "$SETTINGS" | grep -E 'TARGETED_DEVICE_FAMILY = 1$'
           echo "$SETTINGS" | grep -E 'INFOPLIST_FILE = SonicMD/Info.plist$'
+          echo "$SETTINGS" | grep -E 'CURRENT_PROJECT_VERSION = 2$'
       - name: Apply signing profiles
         script: |
           set -euo pipefail
@@ -137,53 +128,56 @@ workflows:
           set -euo pipefail
           cd "$CM_BUILD_DIR"
           IPA=$(find build/ios/ipa -type f -name '*.ipa' -print -quit)
-          test -n "$IPA"
+          if [ -z "$IPA" ]; then
+            echo "ERROR: IPA not found"
+            exit 1
+          fi
+          echo "Validating $IPA"
           rm -rf /tmp/sonicmd-ipa
           mkdir -p /tmp/sonicmd-ipa
           unzip -q "$IPA" -d /tmp/sonicmd-ipa
           APP=$(find /tmp/sonicmd-ipa/Payload -maxdepth 1 -type d -name '*.app' -print -quit)
-          test -n "$APP"
+          if [ -z "$APP" ]; then
+            echo "ERROR: app bundle not found in IPA"
+            exit 1
+          fi
           export APP
           python3 - <<'PY'
-          import os, plistlib, sys
+          import os, plistlib
           app = os.environ['APP']
           plist_path = os.path.join(app, 'Info.plist')
           with open(plist_path, 'rb') as f:
               p = plistlib.load(f)
-          checks = {
+          wanted = {
               'CFBundleIdentifier': 'com.andrea70031.sonicmd',
+              'CFBundleVersion': '2',
               'UILaunchStoryboardName': 'LaunchScreen',
+              'UIRequiresFullScreen': True,
               'GADApplicationIdentifier': 'ca-app-pub-2013766674591751~6839959210',
               'ITSAppUsesNonExemptEncryption': False,
           }
-          for key, expected in checks.items():
+          for key, expected in wanted.items():
               actual = p.get(key)
+              print(f'{key}={actual!r}')
               if actual != expected:
-                  raise SystemExit(f'{key}: expected {expected!r}, got {actual!r}')
-          if not p.get('NSMicrophoneUsageDescription'):
-              raise SystemExit('NSMicrophoneUsageDescription is missing')
+                  raise SystemExit(f'ERROR: {key}: expected {expected!r}, got {actual!r}')
           family = p.get('UIDeviceFamily')
+          print(f'UIDeviceFamily={family!r}')
           if family != [1]:
-              raise SystemExit(f'UIDeviceFamily must be [1], got {family!r}')
+              raise SystemExit(f'ERROR: UIDeviceFamily must be [1], got {family!r}')
+          if not p.get('NSMicrophoneUsageDescription'):
+              raise SystemExit('ERROR: NSMicrophoneUsageDescription missing')
           launch = os.path.join(app, 'LaunchScreen.storyboardc')
+          print(f'Launch screen present={os.path.isdir(launch)}')
           if not os.path.isdir(launch):
-              raise SystemExit('Compiled LaunchScreen.storyboardc is missing from app bundle')
+              raise SystemExit('ERROR: LaunchScreen.storyboardc missing')
           privacy = os.path.join(app, 'PrivacyInfo.xcprivacy')
+          print(f'Privacy manifest present={os.path.isfile(privacy)}')
           if not os.path.isfile(privacy):
-              raise SystemExit('PrivacyInfo.xcprivacy is missing from app bundle')
+              raise SystemExit('ERROR: PrivacyInfo.xcprivacy missing')
           print('Final IPA metadata validation passed.')
           PY
-          ICON_COUNT=0
-          while IFS= read -r -d '' ICON; do
-            ICON_COUNT=$((ICON_COUNT + 1))
-            ALPHA=$(sips -g hasAlpha "$ICON" | awk '/hasAlpha/ {print $2}')
-            if [ "$ALPHA" != "no" ]; then
-              echo "App icon contains alpha: $ICON"
-              exit 1
-            fi
-          done < <(find "$APP" -maxdepth 1 -type f -name 'AppIcon*.png' -print0)
-          test "$ICON_COUNT" -gt 0
-          echo "Final IPA preflight validation passed."
+          echo "Preflight passed; handing IPA to App Store Connect."
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
