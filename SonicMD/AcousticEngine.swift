@@ -119,7 +119,7 @@ final class AcousticEngine: ObservableObject {
             isRunning = false
         } catch {
             isRunning = false
-            if case AcousticError.microphoneDenied = error {
+            if error is AcousticError {
                 microphonePermissionDenied = true
             }
             status = error.localizedDescription
@@ -205,7 +205,7 @@ final class AcousticEngine: ObservableObject {
             status = "\(name) completato."
         } catch {
             isRunning = false
-            if case AcousticError.microphoneDenied = error {
+            if error is AcousticError {
                 microphonePermissionDenied = true
             }
             status = error.localizedDescription
