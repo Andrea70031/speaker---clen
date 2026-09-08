@@ -10,5 +10,7 @@
     <string>ca-app-pub-2013766674591751~6839959210</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
+    <key>UILaunchScreen</key>
+    <dict/>
 </dict>
 </plist>
