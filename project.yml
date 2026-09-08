@@ -13,7 +13,6 @@ packages:
 settings:
   base:
     SWIFT_VERSION: 5.0
-    TARGETED_DEVICE_FAMILY: "1"
 
 targets:
   SonicMD:
@@ -21,14 +20,30 @@ targets:
     platform: iOS
     deploymentTarget: "17.0"
     sources:
-      - path: SonicMD
+      - path: SonicMD/AcousticEngine.swift
+      - path: SonicMD/AdMobBannerView.swift
+      - path: SonicMD/ContentView.swift
+      - path: SonicMD/PrivacyView.swift
+      - path: SonicMD/QuickGuideView.swift
+      - path: SonicMD/SessionHistory.swift
+      - path: SonicMD/SonicMDApp.swift
+      - path: SonicMD/TermsView.swift
     resources:
       - path: SonicMD/Assets.xcassets
       - path: SonicMD/PrivacyInfo.xcprivacy
+      - path: SonicMD/LaunchScreen.storyboard
     dependencies:
       - package: GoogleMobileAds
     info:
       path: SonicMD/Info.plist
+      properties:
+        CFBundleDisplayName: "Sonic MD"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSMicrophoneUsageDescription: "Sonic MD usa il microfono per confrontare localmente la risposta acustica dell'altoparlante prima e dopo una sessione. L'audio non viene inviato a server esterni."
+        GADApplicationIdentifier: "ca-app-pub-2013766674591751~6839959210"
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchStoryboardName: LaunchScreen
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.andrea70031.sonicmd
@@ -38,3 +53,7 @@ targets:
         CODE_SIGN_STYLE: Automatic
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
