@@ -44,12 +44,13 @@ targets:
         GADApplicationIdentifier: "ca-app-pub-2013766674591751~6839959210"
         ITSAppUsesNonExemptEncryption: false
         UILaunchStoryboardName: LaunchScreen
+        UIRequiresFullScreen: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.andrea70031.sonicmd
         PRODUCT_NAME: SonicMD
         MARKETING_VERSION: 1.0.0
-        CURRENT_PROJECT_VERSION: 1
+        CURRENT_PROJECT_VERSION: 2
         CODE_SIGN_STYLE: Automatic
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: NO
