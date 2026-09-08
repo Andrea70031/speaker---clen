@@ -7,11 +7,16 @@ workflows:
       xcode: latest
     scripts:
       - name: Show Xcode version
-        script: xcodebuild -version
-      - name: Install build tools
-        script: brew install xcodegen librsvg imagemagick
-      - name: Generate App Store icon
         script: |
+          set -euo pipefail
+          xcodebuild -version
+      - name: Install build tools
+        script: |
+          set -euo pipefail
+          brew install xcodegen librsvg imagemagick
+      - name: Generate and validate App Store icon
+        script: |
+          set -euo pipefail
           cd "$CM_BUILD_DIR"
           rsvg-convert -w 1024 -h 1024 \
             SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.svg \
@@ -19,13 +24,29 @@ workflows:
           magick /tmp/AppIcon-rgba.png \
             -background white -alpha remove -alpha off \
             PNG24:SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png
-      - name: Generate Xcode project
+          WIDTH=$(sips -g pixelWidth SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png | awk '/pixelWidth/ {print $2}')
+          HEIGHT=$(sips -g pixelHeight SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png | awk '/pixelHeight/ {print $2}')
+          ALPHA=$(sips -g hasAlpha SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png | awk '/hasAlpha/ {print $2}')
+          test "$WIDTH" = "1024"
+          test "$HEIGHT" = "1024"
+          test "$ALPHA" = "no"
+      - name: Generate and validate Xcode project
         script: |
+          set -euo pipefail
           cd "$CM_BUILD_DIR"
           xcodegen generate --spec project.yml
           xcodebuild -project SonicMD.xcodeproj -list
+          plutil -lint SonicMD/Info.plist
+          test "$(/usr/libexec/PlistBuddy -c 'Print :UILaunchStoryboardName' SonicMD/Info.plist)" = "LaunchScreen"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :GADApplicationIdentifier' SonicMD/Info.plist)" = "ca-app-pub-2013766674591751~6839959210"
+          test -n "$(/usr/libexec/PlistBuddy -c 'Print :NSMicrophoneUsageDescription' SonicMD/Info.plist)"
+          test -f SonicMD/LaunchScreen.storyboard
+          SETTINGS=$(xcodebuild -project SonicMD.xcodeproj -scheme SonicMD -showBuildSettings)
+          echo "$SETTINGS" | grep -E 'TARGETED_DEVICE_FAMILY = 1$'
+          echo "$SETTINGS" | grep -E 'INFOPLIST_FILE = SonicMD/Info.plist$'
       - name: Build unsigned simulator app
         script: |
+          set -euo pipefail
           set -o pipefail
           cd "$CM_BUILD_DIR"
           xcodebuild build \
@@ -59,6 +80,7 @@ workflows:
     scripts:
       - name: Verify Xcode 26 or newer
         script: |
+          set -euo pipefail
           xcodebuild -version
           MAJOR=$(xcodebuild -version | head -1 | awk '{print int($2)}')
           if [ "$MAJOR" -lt 26 ]; then
@@ -66,9 +88,12 @@ workflows:
             exit 1
           fi
       - name: Install build tools
-        script: brew install xcodegen librsvg imagemagick
-      - name: Generate App Store icon
         script: |
+          set -euo pipefail
+          brew install xcodegen librsvg imagemagick
+      - name: Generate and validate App Store icon
+        script: |
+          set -euo pipefail
           cd "$CM_BUILD_DIR"
           rsvg-convert -w 1024 -h 1024 \
             SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.svg \
@@ -76,20 +101,89 @@ workflows:
           magick /tmp/AppIcon-rgba.png \
             -background white -alpha remove -alpha off \
             PNG24:SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png
-      - name: Generate Xcode project
+          WIDTH=$(sips -g pixelWidth SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png | awk '/pixelWidth/ {print $2}')
+          HEIGHT=$(sips -g pixelHeight SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png | awk '/pixelHeight/ {print $2}')
+          ALPHA=$(sips -g hasAlpha SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png | awk '/hasAlpha/ {print $2}')
+          test "$WIDTH" = "1024"
+          test "$HEIGHT" = "1024"
+          test "$ALPHA" = "no"
+      - name: Generate and validate Xcode project
         script: |
+          set -euo pipefail
           cd "$CM_BUILD_DIR"
           xcodegen generate --spec project.yml
+          plutil -lint SonicMD/Info.plist
+          test "$(/usr/libexec/PlistBuddy -c 'Print :UILaunchStoryboardName' SonicMD/Info.plist)" = "LaunchScreen"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :GADApplicationIdentifier' SonicMD/Info.plist)" = "ca-app-pub-2013766674591751~6839959210"
+          test -n "$(/usr/libexec/PlistBuddy -c 'Print :NSMicrophoneUsageDescription' SonicMD/Info.plist)"
+          test -f SonicMD/LaunchScreen.storyboard
+          SETTINGS=$(xcodebuild -project SonicMD.xcodeproj -scheme SonicMD -showBuildSettings)
+          echo "$SETTINGS" | grep -E 'TARGETED_DEVICE_FAMILY = 1$'
+          echo "$SETTINGS" | grep -E 'INFOPLIST_FILE = SonicMD/Info.plist$'
       - name: Apply signing profiles
         script: |
+          set -euo pipefail
           cd "$CM_BUILD_DIR"
           xcode-project use-profiles
       - name: Build signed IPA
         script: |
+          set -euo pipefail
           cd "$CM_BUILD_DIR"
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
+      - name: Validate final IPA before publishing
+        script: |
+          set -euo pipefail
+          cd "$CM_BUILD_DIR"
+          IPA=$(find build/ios/ipa -type f -name '*.ipa' -print -quit)
+          test -n "$IPA"
+          rm -rf /tmp/sonicmd-ipa
+          mkdir -p /tmp/sonicmd-ipa
+          unzip -q "$IPA" -d /tmp/sonicmd-ipa
+          APP=$(find /tmp/sonicmd-ipa/Payload -maxdepth 1 -type d -name '*.app' -print -quit)
+          test -n "$APP"
+          export APP
+          python3 - <<'PY'
+          import os, plistlib, sys
+          app = os.environ['APP']
+          plist_path = os.path.join(app, 'Info.plist')
+          with open(plist_path, 'rb') as f:
+              p = plistlib.load(f)
+          checks = {
+              'CFBundleIdentifier': 'com.andrea70031.sonicmd',
+              'UILaunchStoryboardName': 'LaunchScreen',
+              'GADApplicationIdentifier': 'ca-app-pub-2013766674591751~6839959210',
+              'ITSAppUsesNonExemptEncryption': False,
+          }
+          for key, expected in checks.items():
+              actual = p.get(key)
+              if actual != expected:
+                  raise SystemExit(f'{key}: expected {expected!r}, got {actual!r}')
+          if not p.get('NSMicrophoneUsageDescription'):
+              raise SystemExit('NSMicrophoneUsageDescription is missing')
+          family = p.get('UIDeviceFamily')
+          if family != [1]:
+              raise SystemExit(f'UIDeviceFamily must be [1], got {family!r}')
+          launch = os.path.join(app, 'LaunchScreen.storyboardc')
+          if not os.path.isdir(launch):
+              raise SystemExit('Compiled LaunchScreen.storyboardc is missing from app bundle')
+          privacy = os.path.join(app, 'PrivacyInfo.xcprivacy')
+          if not os.path.isfile(privacy):
+              raise SystemExit('PrivacyInfo.xcprivacy is missing from app bundle')
+          print('Final IPA metadata validation passed.')
+          PY
+          ICON_COUNT=0
+          while IFS= read -r -d '' ICON; do
+            ICON_COUNT=$((ICON_COUNT + 1))
+            ALPHA=$(sips -g hasAlpha "$ICON" | awk '/hasAlpha/ {print $2}')
+            if [ "$ALPHA" != "no" ]; then
+              echo "App icon contains alpha: $ICON"
+              exit 1
+            fi
+          done < <(find "$APP" -maxdepth 1 -type f -name 'AppIcon*.png' -print0)
+          test "$ICON_COUNT" -gt 0
+          echo "Final IPA preflight validation passed."
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
