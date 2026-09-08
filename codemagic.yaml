@@ -9,13 +9,16 @@ workflows:
       - name: Show Xcode version
         script: xcodebuild -version
       - name: Install build tools
-        script: brew install xcodegen librsvg
+        script: brew install xcodegen librsvg imagemagick
       - name: Generate App Store icon
         script: |
           cd "$CM_BUILD_DIR"
           rsvg-convert -w 1024 -h 1024 \
             SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.svg \
-            -o SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+            -o /tmp/AppIcon-rgba.png
+          magick /tmp/AppIcon-rgba.png \
+            -background white -alpha remove -alpha off \
+            PNG24:SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png
       - name: Generate Xcode project
         script: |
           cd "$CM_BUILD_DIR"
@@ -63,13 +66,16 @@ workflows:
             exit 1
           fi
       - name: Install build tools
-        script: brew install xcodegen librsvg
+        script: brew install xcodegen librsvg imagemagick
       - name: Generate App Store icon
         script: |
           cd "$CM_BUILD_DIR"
           rsvg-convert -w 1024 -h 1024 \
             SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.svg \
-            -o SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+            -o /tmp/AppIcon-rgba.png
+          magick /tmp/AppIcon-rgba.png \
+            -background white -alpha remove -alpha off \
+            PNG24:SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png
       - name: Generate Xcode project
         script: |
           cd "$CM_BUILD_DIR"
