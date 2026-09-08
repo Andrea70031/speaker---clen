@@ -31,7 +31,6 @@ targets:
     resources:
       - path: SonicMD/Assets.xcassets
       - path: SonicMD/PrivacyInfo.xcprivacy
-      - path: SonicMD/LaunchScreen.storyboard
     dependencies:
       - package: GoogleMobileAds
     info:
@@ -43,14 +42,15 @@ targets:
         NSMicrophoneUsageDescription: "Sonic MD usa il microfono per confrontare localmente la risposta acustica dell'altoparlante prima e dopo una sessione. L'audio non viene inviato a server esterni."
         GADApplicationIdentifier: "ca-app-pub-2013766674591751~6839959210"
         ITSAppUsesNonExemptEncryption: false
-        UILaunchStoryboardName: LaunchScreen
+        UILaunchScreen:
+          UIColorName: LaunchBackground
         UIRequiresFullScreen: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.andrea70031.sonicmd
         PRODUCT_NAME: SonicMD
         MARKETING_VERSION: 1.0.0
-        CURRENT_PROJECT_VERSION: 2
+        CURRENT_PROJECT_VERSION: 3
         CODE_SIGN_STYLE: Automatic
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: NO
