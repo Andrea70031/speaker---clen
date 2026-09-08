@@ -38,6 +38,7 @@ workflows:
           xcodegen generate --spec project.yml
           xcodebuild -project SonicMD.xcodeproj -list
           plutil -lint SonicMD/Info.plist
+          test "$(/usr/libexec/PlistBuddy -c 'Print :UILaunchScreen:UIColorName' SonicMD/Info.plist)" = "LaunchBackground"
           SETTINGS=$(xcodebuild -project SonicMD.xcodeproj -scheme SonicMD -showBuildSettings)
           echo "$SETTINGS" | grep -E 'TARGETED_DEVICE_FAMILY = 1$'
           echo "$SETTINGS" | grep -E 'INFOPLIST_FILE = SonicMD/Info.plist$'
@@ -107,10 +108,11 @@ workflows:
           cd "$CM_BUILD_DIR"
           xcodegen generate --spec project.yml
           plutil -lint SonicMD/Info.plist
+          test "$(/usr/libexec/PlistBuddy -c 'Print :UILaunchScreen:UIColorName' SonicMD/Info.plist)" = "LaunchBackground"
           SETTINGS=$(xcodebuild -project SonicMD.xcodeproj -scheme SonicMD -showBuildSettings)
           echo "$SETTINGS" | grep -E 'TARGETED_DEVICE_FAMILY = 1$'
           echo "$SETTINGS" | grep -E 'INFOPLIST_FILE = SonicMD/Info.plist$'
-          echo "$SETTINGS" | grep -E 'CURRENT_PROJECT_VERSION = 2$'
+          echo "$SETTINGS" | grep -E 'CURRENT_PROJECT_VERSION = 3$'
       - name: Apply signing profiles
         script: |
           set -euo pipefail
@@ -150,8 +152,7 @@ workflows:
               p = plistlib.load(f)
           wanted = {
               'CFBundleIdentifier': 'com.andrea70031.sonicmd',
-              'CFBundleVersion': '2',
-              'UILaunchStoryboardName': 'LaunchScreen',
+              'CFBundleVersion': '3',
               'UIRequiresFullScreen': True,
               'GADApplicationIdentifier': 'ca-app-pub-2013766674591751~6839959210',
               'ITSAppUsesNonExemptEncryption': False,
@@ -167,10 +168,12 @@ workflows:
               raise SystemExit(f'ERROR: UIDeviceFamily must be [1], got {family!r}')
           if not p.get('NSMicrophoneUsageDescription'):
               raise SystemExit('ERROR: NSMicrophoneUsageDescription missing')
-          launch = os.path.join(app, 'LaunchScreen.storyboardc')
-          print(f'Launch screen present={os.path.isdir(launch)}')
-          if not os.path.isdir(launch):
-              raise SystemExit('ERROR: LaunchScreen.storyboardc missing')
+          if 'UILaunchStoryboardName' in p:
+              raise SystemExit(f"ERROR: obsolete UILaunchStoryboardName still present: {p.get('UILaunchStoryboardName')!r}")
+          launch = p.get('UILaunchScreen')
+          print(f'UILaunchScreen={launch!r}')
+          if not isinstance(launch, dict) or launch.get('UIColorName') != 'LaunchBackground':
+              raise SystemExit(f'ERROR: invalid UILaunchScreen configuration: {launch!r}')
           privacy = os.path.join(app, 'PrivacyInfo.xcprivacy')
           print(f'Privacy manifest present={os.path.isfile(privacy)}')
           if not os.path.isfile(privacy):
