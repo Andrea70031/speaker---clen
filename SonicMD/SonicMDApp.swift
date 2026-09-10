@@ -1,22 +1,24 @@
 import SwiftUI
-import GoogleMobileAds
 
 @main
 struct SonicMDApp: App {
     @StateObject private var engine = AcousticEngine()
-
-    init() {
-        MobileAds.shared.start()
-    }
+    @StateObject private var consentManager = ConsentManager()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(engine)
+                .environmentObject(consentManager)
                 .safeAreaInset(edge: .bottom) {
-                    AdMobBannerView()
-                        .frame(height: 60)
-                        .background(.ultraThinMaterial)
+                    if consentManager.canRequestAds {
+                        AdMobBannerView()
+                            .frame(height: 60)
+                            .background(.ultraThinMaterial)
+                    }
+                }
+                .task {
+                    await consentManager.gatherConsent()
                 }
         }
     }
