@@ -79,8 +79,8 @@ final class AcousticEngine: ObservableObject {
             throw AcousticError.audioInputUnavailable
         }
 
-        // Passing nil lets AVAudioEngine use the input node's native hardware format.
-        // This avoids CoreAudio format assertions that can terminate the app on-device.
+        // Let AVAudioEngine use the input node's native hardware format.
+        // Supplying a mismatched explicit format can trigger a CoreAudio assertion on-device.
         input.installTap(onBus: 0, bufferSize: 1024, format: nil) { [weak self] buffer, _ in
             guard buffer.frameLength > 0,
                   let self,
@@ -318,8 +318,13 @@ final class AcousticEngine: ObservableObject {
         isRunning = false
         progress = 0
 
-        if case AcousticError.microphoneDenied = error {
-            microphonePermissionDenied = true
+        if let acousticError = error as? AcousticError {
+            switch acousticError {
+            case .microphoneDenied:
+                microphonePermissionDenied = true
+            case .audioInputUnavailable, .audioOutputUnavailable:
+                microphonePermissionDenied = false
+            }
         }
 
         status = error.localizedDescription
