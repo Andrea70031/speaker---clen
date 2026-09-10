@@ -3,19 +3,33 @@ import UIKit
 import GoogleMobileAds
 
 struct AdMobBannerView: UIViewRepresentable {
+    static let productionBannerAdUnitID = "ca-app-pub-2013766674591751/9742926905"
     static let testBannerAdUnitID = "ca-app-pub-3940256099942544/2934735716"
 
     func makeUIView(context: Context) -> BannerView {
         let width = max(UIScreen.main.bounds.width - 32, 320)
         let adSize = currentOrientationAnchoredAdaptiveBanner(width: width)
         let banner = BannerView(adSize: adSize)
-        banner.adUnitID = Self.testBannerAdUnitID
+        banner.adUnitID = activeBannerAdUnitID
         banner.rootViewController = topViewController()
         banner.load(Request())
         return banner
     }
 
     func updateUIView(_ uiView: BannerView, context: Context) {}
+
+    private var activeBannerAdUnitID: String {
+        #if DEBUG
+        return Self.testBannerAdUnitID
+        #else
+        // TestFlight uses a sandbox App Store receipt. Keep test ads there to avoid
+        // accidental invalid traffic; production App Store installs use the real unit.
+        if Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" {
+            return Self.testBannerAdUnitID
+        }
+        return Self.productionBannerAdUnitID
+        #endif
+    }
 
     private func topViewController() -> UIViewController? {
         guard let scene = UIApplication.shared.connectedScenes
