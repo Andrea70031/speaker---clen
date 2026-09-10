@@ -29,21 +29,34 @@ final class AcousticEngine: ObservableObject {
 
         try session.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker])
         try session.setActive(true)
+        try? session.overrideOutputAudioPort(.speaker)
+
+        let input = engine.inputNode
+        let inputFormat = input.outputFormat(forBus: 0)
+        guard inputFormat.sampleRate > 0, inputFormat.channelCount > 0 else {
+            throw AcousticError.audioInputUnavailable
+        }
 
         if !engine.attachedNodes.contains(player) {
             engine.attach(player)
-            engine.connect(player, to: engine.mainMixerNode, format: nil)
+        }
+
+        if engine.outputConnectionPoints(for: player, outputBus: 0).isEmpty {
+            let mixerFormat = engine.mainMixerNode.outputFormat(forBus: 0)
+            guard mixerFormat.sampleRate > 0, mixerFormat.channelCount > 0 else {
+                throw AcousticError.audioOutputUnavailable
+            }
+            engine.connect(player, to: engine.mainMixerNode, format: mixerFormat)
         }
 
         if !tapInstalled {
-            installMicrophoneTap()
+            try installMicrophoneTap()
         }
 
         if !engine.isRunning {
+            engine.prepare()
             try engine.start()
         }
-
-        try? session.overrideOutputAudioPort(.speaker)
     }
 
     private func requestMicrophonePermission() async -> Bool {
@@ -58,12 +71,21 @@ final class AcousticEngine: ObservableObject {
         }
     }
 
-    private func installMicrophoneTap() {
+    private func installMicrophoneTap() throws {
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
 
-        input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-            guard let self, let channel = buffer.floatChannelData?[0] else { return }
+        guard format.sampleRate > 0, format.channelCount > 0 else {
+            throw AcousticError.audioInputUnavailable
+        }
+
+        // Passing nil lets AVAudioEngine use the input node's native hardware format.
+        // This avoids CoreAudio format assertions that can terminate the app on-device.
+        input.installTap(onBus: 0, bufferSize: 1024, format: nil) { [weak self] buffer, _ in
+            guard buffer.frameLength > 0,
+                  let self,
+                  let channel = buffer.floatChannelData?[0]
+            else { return }
 
             var rms: Float = 0
             vDSP_rmsqv(channel, 1, &rms, vDSP_Length(buffer.frameLength))
@@ -91,7 +113,7 @@ final class AcousticEngine: ObservableObject {
 
             for (index, frequency) in testFrequencies.enumerated() {
                 rmsSamples.removeAll(keepingCapacity: true)
-                playTone(frequency: frequency, duration: 0.42, amplitude: 0.18)
+                try playTone(frequency: frequency, duration: 0.42, amplitude: 0.18)
                 try await Task.sleep(for: .milliseconds(330))
 
                 bands.append(max(robustAverage(rmsSamples), 0.000001))
@@ -118,11 +140,7 @@ final class AcousticEngine: ObservableObject {
 
             isRunning = false
         } catch {
-            isRunning = false
-            if error is AcousticError {
-                microphonePermissionDenied = true
-            }
-            status = error.localizedDescription
+            handle(error)
         }
     }
 
@@ -188,7 +206,7 @@ final class AcousticEngine: ObservableObject {
             status = "\(name) in corso…"
 
             for (index, frequency) in frequencies.enumerated() {
-                playTone(
+                try playTone(
                     frequency: frequency,
                     duration: Double(toneMilliseconds) / 1000.0,
                     amplitude: amplitude
@@ -204,11 +222,7 @@ final class AcousticEngine: ObservableObject {
             isRunning = false
             status = "\(name) completato."
         } catch {
-            isRunning = false
-            if error is AcousticError {
-                microphonePermissionDenied = true
-            }
-            status = error.localizedDescription
+            handle(error)
         }
     }
 
@@ -216,42 +230,56 @@ final class AcousticEngine: ObservableObject {
         frequency: Double,
         duration: Double,
         amplitude: Float
-    ) {
-        let sampleRate = 48_000.0
-        let frameCount = AVAudioFrameCount(duration * sampleRate)
+    ) throws {
+        let format = player.outputFormat(forBus: 0)
+        guard format.sampleRate > 0,
+              format.channelCount > 0,
+              format.commonFormat == .pcmFormatFloat32
+        else {
+            throw AcousticError.audioOutputUnavailable
+        }
 
-        guard let format = AVAudioFormat(
-            standardFormatWithSampleRate: sampleRate,
-            channels: 1
-        ),
-        let buffer = AVAudioPCMBuffer(
+        let sampleRate = format.sampleRate
+        let frameCount = AVAudioFrameCount(max(1, Int(duration * sampleRate)))
+
+        guard let buffer = AVAudioPCMBuffer(
             pcmFormat: format,
             frameCapacity: frameCount
-        ) else { return }
+        ) else {
+            throw AcousticError.audioOutputUnavailable
+        }
 
         buffer.frameLength = frameCount
-        guard let samples = buffer.floatChannelData?[0] else { return }
+        guard let channelData = buffer.floatChannelData else {
+            throw AcousticError.audioOutputUnavailable
+        }
 
         let attackFrames = max(1, Int(sampleRate * 0.015))
         let releaseFrames = max(1, Int(sampleRate * 0.040))
 
-        for i in 0..<Int(frameCount) {
-            let time = Double(i) / sampleRate
-            var envelope: Float = 1
+        for channelIndex in 0..<Int(format.channelCount) {
+            let samples = channelData[channelIndex]
 
-            if i < attackFrames {
-                envelope = Float(i) / Float(attackFrames)
-            } else if i > Int(frameCount) - releaseFrames {
-                envelope = Float(Int(frameCount) - i) / Float(releaseFrames)
+            for i in 0..<Int(frameCount) {
+                let time = Double(i) / sampleRate
+                var envelope: Float = 1
+
+                if i < attackFrames {
+                    envelope = Float(i) / Float(attackFrames)
+                } else if i > Int(frameCount) - releaseFrames {
+                    envelope = Float(Int(frameCount) - i) / Float(releaseFrames)
+                }
+
+                samples[i] = Float(sin(2.0 * Double.pi * frequency * time))
+                    * amplitude
+                    * max(0, envelope)
             }
-
-            samples[i] = Float(sin(2.0 * Double.pi * frequency * time))
-                * amplitude
-                * max(0, envelope)
         }
 
         player.scheduleBuffer(buffer)
-        if !player.isPlaying { player.play() }
+        if !player.isPlaying {
+            player.play()
+        }
     }
 
     private func robustAverage(_ values: [Float]) -> Float {
@@ -285,15 +313,32 @@ final class AcousticEngine: ObservableObject {
         guard beforeAverage > 0 else { return 0 }
         return Double((afterAverage - beforeAverage) / beforeAverage * 100)
     }
+
+    private func handle(_ error: Error) {
+        isRunning = false
+        progress = 0
+
+        if case AcousticError.microphoneDenied = error {
+            microphonePermissionDenied = true
+        }
+
+        status = error.localizedDescription
+    }
 }
 
 enum AcousticError: LocalizedError {
     case microphoneDenied
+    case audioInputUnavailable
+    case audioOutputUnavailable
 
     var errorDescription: String? {
         switch self {
         case .microphoneDenied:
             return "Permesso microfono negato. Abilitalo nelle Impostazioni di iOS."
+        case .audioInputUnavailable:
+            return "Ingresso microfono non disponibile. Scollega eventuali dispositivi audio e riprova."
+        case .audioOutputUnavailable:
+            return "Uscita audio non disponibile. Scollega eventuali dispositivi audio e riprova."
         }
     }
 }
