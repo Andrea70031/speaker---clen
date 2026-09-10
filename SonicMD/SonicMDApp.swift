@@ -11,10 +11,25 @@ struct SonicMDApp: App {
                 .environmentObject(engine)
                 .environmentObject(consentManager)
                 .safeAreaInset(edge: .bottom) {
-                    if consentManager.canRequestAds {
-                        AdMobBannerView()
-                            .frame(height: 60)
+                    VStack(spacing: 0) {
+                        if consentManager.privacyOptionsRequired {
+                            Button {
+                                Task { await consentManager.presentPrivacyOptions() }
+                            } label: {
+                                Label("Scelte privacy annunci", systemImage: "hand.raised")
+                                    .font(.caption.weight(.semibold))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 7)
+                            }
+                            .buttonStyle(.plain)
                             .background(.ultraThinMaterial)
+                        }
+
+                        if consentManager.canRequestAds {
+                            AdMobBannerView()
+                                .frame(height: 60)
+                                .background(.ultraThinMaterial)
+                        }
                     }
                 }
                 .task {
