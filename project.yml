@@ -9,6 +9,9 @@ packages:
   GoogleMobileAds:
     url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
     from: 13.4.0
+  GoogleUserMessagingPlatform:
+    url: https://github.com/googleads/swift-package-manager-google-user-messaging-platform.git
+    from: 3.0.0
 
 settings:
   base:
@@ -22,6 +25,7 @@ targets:
     sources:
       - path: SonicMD/AcousticEngine.swift
       - path: SonicMD/AdMobBannerView.swift
+      - path: SonicMD/ConsentManager.swift
       - path: SonicMD/ContentView.swift
       - path: SonicMD/PrivacyView.swift
       - path: SonicMD/QuickGuideView.swift
@@ -34,6 +38,7 @@ targets:
         buildPhase: resources
     dependencies:
       - package: GoogleMobileAds
+      - package: GoogleUserMessagingPlatform
     info:
       path: SonicMD/Info.plist
       properties:
@@ -51,7 +56,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.andrea70031.sonicmd
         PRODUCT_NAME: SonicMD
         MARKETING_VERSION: 1.0.0
-        CURRENT_PROJECT_VERSION: 5
+        CURRENT_PROJECT_VERSION: 6
         CODE_SIGN_STYLE: Automatic
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: NO
