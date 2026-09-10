@@ -3,14 +3,14 @@ import SwiftUI
 struct PrivacyView: View {
     @Environment(\.dismiss) private var dismiss
 
-    private let privacyURL = URL(string: "https://andrea70031.github.io/speaker---clen/privacy.html")!
+    private let privacyURL = URL(string: "https://oneassistantai.com/sonic-md/privacy")!
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text("Privacy").font(.largeTitle.bold())
-                    Text("Sonic MD è progettata per funzionare localmente sul dispositivo.")
+                    Text("Sonic MD elabora localmente sul dispositivo le funzioni acustiche principali e non richiede un account.")
 
                     section(
                         title: "Microfono",
@@ -21,12 +21,16 @@ struct PrivacyView: View {
                         text: "La cronologia delle sessioni contiene soltanto data, indice prima/dopo e variazione percentuale. È salvata localmente sul dispositivo e può essere cancellata dalla schermata Cronologia."
                     )
                     section(
-                        title: "Account, pubblicità e tracciamento",
-                        text: "La versione 1.0 non richiede account, non contiene pubblicità, non usa tracker e non integra SDK di analytics di terze parti."
+                        title: "Pubblicità e servizi di terze parti",
+                        text: "Sonic MD utilizza Google AdMob per mostrare annunci. Google e i suoi partner possono trattare dati tecnici, identificativi del dispositivo, posizione approssimativa, dati di utilizzo, pubblicitari, prestazioni e diagnostica secondo le scelte privacy dell'utente e la normativa applicabile."
+                    )
+                    section(
+                        title: "Consenso e scelte privacy",
+                        text: "Quando richiesto, Sonic MD mostra il modulo di consenso Google UMP prima di richiedere annunci. Le scelte relative alla pubblicità possono essere modificate tramite l'opzione privacy mostrata nell'app quando prevista."
                     )
                     section(
                         title: "Conservazione e cancellazione",
-                        text: "I dati locali restano sul dispositivo finché non vengono cancellati dall'utente o finché l'app non viene rimossa. Sonic MD non conserva copie server dei dati."
+                        text: "I dati audio e la cronologia locale non vengono conservati sui server di Sonic MD. I dati locali restano sul dispositivo finché non vengono cancellati dall'utente o finché l'app non viene rimossa."
                     )
 
                     Link(destination: privacyURL) {
@@ -36,7 +40,7 @@ struct PrivacyView: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
 
-                    Text("Ultimo aggiornamento: 8 settembre 2026")
+                    Text("Ultimo aggiornamento: 10 settembre 2026")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
