@@ -25,8 +25,8 @@ struct PrivacyView: View {
                         text: "Sonic MD utilizza Google AdMob per mostrare annunci. Google e i suoi partner possono trattare dati tecnici, identificativi del dispositivo, posizione approssimativa, dati di utilizzo, pubblicitari, prestazioni e diagnostica secondo le scelte privacy dell'utente e la normativa applicabile."
                     )
                     section(
-                        title: "Consenso e scelte privacy",
-                        text: "Quando richiesto, Sonic MD mostra il modulo di consenso Google UMP prima di richiedere annunci. Le scelte relative alla pubblicità possono essere modificate tramite l'opzione privacy mostrata nell'app quando prevista."
+                        title: "Consenso e App Tracking Transparency",
+                        text: "Quando richiesto, Sonic MD mostra il modulo di consenso Google UMP. Se il dispositivo è idoneo al tracciamento pubblicitario, iOS mostra inoltre la richiesta di autorizzazione App Tracking Transparency. Se l'utente rifiuta ATT, l'app continua a funzionare normalmente e gli annunci possono essere richiesti senza IDFA."
                     )
                     section(
                         title: "Conservazione e cancellazione",
@@ -40,7 +40,7 @@ struct PrivacyView: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
 
-                    Text("Ultimo aggiornamento: 10 settembre 2026")
+                    Text("Ultimo aggiornamento: 13 settembre 2026")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
