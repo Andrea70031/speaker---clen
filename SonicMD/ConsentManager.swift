@@ -1,6 +1,7 @@
 import SwiftUI
 import GoogleMobileAds
 import UserMessagingPlatform
+import AppTrackingTransparency
 
 @MainActor
 final class ConsentManager: ObservableObject {
@@ -21,20 +22,21 @@ final class ConsentManager: ObservableObject {
 
         if let requestError {
             lastErrorMessage = requestError.localizedDescription
-            refreshAdState()
+            await finalizePrivacyAndAdsState()
             return
         }
 
         privacyOptionsRequired = ConsentInformation.shared.privacyOptionsRequirementStatus == .required
 
         do {
+            // This is the GDPR/Google consent form. It is not a substitute for Apple's ATT prompt.
             try await ConsentForm.loadAndPresentIfRequired(from: nil)
             lastErrorMessage = nil
         } catch {
             lastErrorMessage = error.localizedDescription
         }
 
-        refreshAdState()
+        await finalizePrivacyAndAdsState()
     }
 
     func presentPrivacyOptions() async {
@@ -45,15 +47,38 @@ final class ConsentManager: ObservableObject {
             lastErrorMessage = error.localizedDescription
         }
 
-        refreshAdState()
+        await finalizePrivacyAndAdsState()
     }
 
-    private func refreshAdState() {
+    private func finalizePrivacyAndAdsState() async {
         privacyOptionsRequired = ConsentInformation.shared.privacyOptionsRequirementStatus == .required
-        canRequestAds = ConsentInformation.shared.canRequestAds
 
-        guard canRequestAds, !mobileAdsStarted else { return }
+        guard ConsentInformation.shared.canRequestAds else {
+            canRequestAds = false
+            return
+        }
+
+        // ATT is the only permission request used for Apple-defined tracking.
+        // If the user denies ATT, AdMob can still request ads without IDFA.
+        await requestTrackingAuthorizationIfNeeded()
+
+        canRequestAds = true
+
+        guard !mobileAdsStarted else { return }
         mobileAdsStarted = true
         MobileAds.shared.start()
+    }
+
+    private func requestTrackingAuthorizationIfNeeded() async {
+        guard ATTrackingManager.trackingAuthorizationStatus == .notDetermined else { return }
+
+        // Allow any UMP sheet to finish dismissing before presenting the system ATT alert.
+        try? await Task.sleep(for: .milliseconds(450))
+
+        await withCheckedContinuation { continuation in
+            ATTrackingManager.requestTrackingAuthorization { _ in
+                continuation.resume()
+            }
+        }
     }
 }
