@@ -39,10 +39,12 @@ workflows:
           xcodebuild -project SonicMD.xcodeproj -list
           plutil -lint SonicMD/Info.plist
           test "$(/usr/libexec/PlistBuddy -c 'Print :UILaunchScreen:UIColorName' SonicMD/Info.plist)" = "LaunchBackground"
+          test -n "$(/usr/libexec/PlistBuddy -c 'Print :NSUserTrackingUsageDescription' SonicMD/Info.plist)"
           PBXPROJ="SonicMD.xcodeproj/project.pbxproj"
           grep -q 'PrivacyInfo.xcprivacy' "$PBXPROJ" || { echo 'ERROR: PrivacyInfo.xcprivacy not included in generated Xcode project'; exit 1; }
           grep -q 'Assets.xcassets' "$PBXPROJ" || { echo 'ERROR: Assets.xcassets not included in generated Xcode project'; exit 1; }
           grep -q 'ConsentManager.swift' "$PBXPROJ" || { echo 'ERROR: ConsentManager.swift not included in generated Xcode project'; exit 1; }
+          grep -q 'AppTrackingTransparency.framework' "$PBXPROJ" || { echo 'ERROR: AppTrackingTransparency framework not linked'; exit 1; }
           SETTINGS=$(xcodebuild -project SonicMD.xcodeproj -scheme SonicMD -showBuildSettings)
           echo "$SETTINGS" | grep -E 'TARGETED_DEVICE_FAMILY = 1$'
           echo "$SETTINGS" | grep -E 'INFOPLIST_FILE = SonicMD/Info.plist$'
@@ -113,14 +115,16 @@ workflows:
           xcodegen generate --spec project.yml
           plutil -lint SonicMD/Info.plist
           test "$(/usr/libexec/PlistBuddy -c 'Print :UILaunchScreen:UIColorName' SonicMD/Info.plist)" = "LaunchBackground"
+          test -n "$(/usr/libexec/PlistBuddy -c 'Print :NSUserTrackingUsageDescription' SonicMD/Info.plist)"
           PBXPROJ="SonicMD.xcodeproj/project.pbxproj"
           grep -q 'PrivacyInfo.xcprivacy' "$PBXPROJ" || { echo 'ERROR: PrivacyInfo.xcprivacy not included in generated Xcode project'; exit 1; }
           grep -q 'Assets.xcassets' "$PBXPROJ" || { echo 'ERROR: Assets.xcassets not included in generated Xcode project'; exit 1; }
           grep -q 'ConsentManager.swift' "$PBXPROJ" || { echo 'ERROR: ConsentManager.swift not included in generated Xcode project'; exit 1; }
+          grep -q 'AppTrackingTransparency.framework' "$PBXPROJ" || { echo 'ERROR: AppTrackingTransparency framework not linked'; exit 1; }
           SETTINGS=$(xcodebuild -project SonicMD.xcodeproj -scheme SonicMD -showBuildSettings)
           echo "$SETTINGS" | grep -E 'TARGETED_DEVICE_FAMILY = 1$'
           echo "$SETTINGS" | grep -E 'INFOPLIST_FILE = SonicMD/Info.plist$'
-          echo "$SETTINGS" | grep -E 'CURRENT_PROJECT_VERSION = 6$'
+          echo "$SETTINGS" | grep -E 'CURRENT_PROJECT_VERSION = 7$'
       - name: Apply signing profiles
         script: |
           set -euo pipefail
@@ -160,7 +164,7 @@ workflows:
               p = plistlib.load(f)
           wanted = {
               'CFBundleIdentifier': 'com.andrea70031.sonicmd',
-              'CFBundleVersion': '6',
+              'CFBundleVersion': '7',
               'UIRequiresFullScreen': True,
               'GADApplicationIdentifier': 'ca-app-pub-2013766674591751~6839959210',
               'ITSAppUsesNonExemptEncryption': False,
@@ -176,6 +180,8 @@ workflows:
               raise SystemExit(f'ERROR: UIDeviceFamily must be [1], got {family!r}')
           if not p.get('NSMicrophoneUsageDescription'):
               raise SystemExit('ERROR: NSMicrophoneUsageDescription missing')
+          if not p.get('NSUserTrackingUsageDescription'):
+              raise SystemExit('ERROR: NSUserTrackingUsageDescription missing')
           if 'UILaunchStoryboardName' in p:
               raise SystemExit(f"ERROR: obsolete UILaunchStoryboardName still present: {p.get('UILaunchStoryboardName')!r}")
           launch = p.get('UILaunchScreen')
