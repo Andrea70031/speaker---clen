@@ -66,7 +66,7 @@ final class ConsentManager: ObservableObject {
 
         guard !mobileAdsStarted else { return }
         mobileAdsStarted = true
-        MobileAds.shared.start()
+        await MobileAds.shared.start()
     }
 
     private func requestTrackingAuthorizationIfNeeded() async {
