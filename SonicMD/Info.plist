@@ -26,6 +26,8 @@
     <false/>
     <key>NSMicrophoneUsageDescription</key>
     <string>Sonic MD usa il microfono per confrontare localmente la risposta acustica dell'altoparlante prima e dopo una sessione. L'audio non viene inviato a server esterni.</string>
+    <key>NSUserTrackingUsageDescription</key>
+    <string>Sonic MD può usare l'identificatore del dispositivo per mostrare annunci più pertinenti e misurarne le prestazioni. Puoi rifiutare senza limitare le funzioni dell'app.</string>
     <key>UILaunchScreen</key>
     <dict>
         <key>UIColorName</key>
