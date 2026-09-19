@@ -38,6 +38,10 @@ workflows:
           xcodegen generate --spec project.yml
           xcodebuild -project SonicMD.xcodeproj -list
           plutil -lint SonicMD/Info.plist
+          plutil -lint SonicMD/Localization/it.lproj/Localizable.strings
+          plutil -lint SonicMD/Localization/en.lproj/Localizable.strings
+          plutil -lint SonicMD/Localization/it.lproj/InfoPlist.strings
+          plutil -lint SonicMD/Localization/en.lproj/InfoPlist.strings
           test "$(/usr/libexec/PlistBuddy -c 'Print :UILaunchScreen:UIColorName' SonicMD/Info.plist)" = "LaunchBackground"
           test -n "$(/usr/libexec/PlistBuddy -c 'Print :NSUserTrackingUsageDescription' SonicMD/Info.plist)"
           PBXPROJ="SonicMD.xcodeproj/project.pbxproj"
@@ -67,7 +71,7 @@ workflows:
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/Debug-iphonesimulator/*.app
 
   ios-testflight:
-    name: Sonic MD 1.0 - TestFlight
+    name: Sonic MD 1.1 - TestFlight
     max_build_duration: 120
     instance_type: mac_mini_m2
     integrations:
@@ -114,6 +118,10 @@ workflows:
           cd "$CM_BUILD_DIR"
           xcodegen generate --spec project.yml
           plutil -lint SonicMD/Info.plist
+          plutil -lint SonicMD/Localization/it.lproj/Localizable.strings
+          plutil -lint SonicMD/Localization/en.lproj/Localizable.strings
+          plutil -lint SonicMD/Localization/it.lproj/InfoPlist.strings
+          plutil -lint SonicMD/Localization/en.lproj/InfoPlist.strings
           test "$(/usr/libexec/PlistBuddy -c 'Print :UILaunchScreen:UIColorName' SonicMD/Info.plist)" = "LaunchBackground"
           test -n "$(/usr/libexec/PlistBuddy -c 'Print :NSUserTrackingUsageDescription' SonicMD/Info.plist)"
           PBXPROJ="SonicMD.xcodeproj/project.pbxproj"
@@ -124,7 +132,7 @@ workflows:
           SETTINGS=$(xcodebuild -project SonicMD.xcodeproj -scheme SonicMD -showBuildSettings)
           echo "$SETTINGS" | grep -E 'TARGETED_DEVICE_FAMILY = 1$'
           echo "$SETTINGS" | grep -E 'INFOPLIST_FILE = SonicMD/Info.plist$'
-          echo "$SETTINGS" | grep -E 'CURRENT_PROJECT_VERSION = 8$'
+          echo "$SETTINGS" | grep -E 'CURRENT_PROJECT_VERSION = 9$'
       - name: Apply signing profiles
         script: |
           set -euo pipefail
@@ -164,7 +172,9 @@ workflows:
               p = plistlib.load(f)
           wanted = {
               'CFBundleIdentifier': 'com.andrea70031.sonicmd',
-              'CFBundleVersion': '8',
+              'CFBundleShortVersionString': '1.1.0',
+              'CFBundleVersion': '9',
+              'CFBundleLocalizations': ['it', 'en'],
               'UIRequiresFullScreen': True,
               'GADApplicationIdentifier': 'ca-app-pub-2013766674591751~6839959210',
               'ITSAppUsesNonExemptEncryption': False,
@@ -188,6 +198,15 @@ workflows:
           print(f'UILaunchScreen={launch!r}')
           if not isinstance(launch, dict) or launch.get('UIColorName') != 'LaunchBackground':
               raise SystemExit(f'ERROR: invalid UILaunchScreen configuration: {launch!r}')
+          for language in ('it', 'en'):
+              lproj = os.path.join(app, f'{language}.lproj')
+              localizable = os.path.join(lproj, 'Localizable.strings')
+              info_strings = os.path.join(lproj, 'InfoPlist.strings')
+              print(f'{language} localization present={os.path.isfile(localizable)}')
+              if not os.path.isfile(localizable):
+                  raise SystemExit(f'ERROR: {language} Localizable.strings missing')
+              if not os.path.isfile(info_strings):
+                  raise SystemExit(f'ERROR: {language} InfoPlist.strings missing')
           privacy = os.path.join(app, 'PrivacyInfo.xcprivacy')
           print(f'Privacy manifest present={os.path.isfile(privacy)}')
           if not os.path.isfile(privacy):
