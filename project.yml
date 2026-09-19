@@ -2,7 +2,7 @@ name: SonicMD
 
 options:
   bundleIdPrefix: com.andrea70031
-  developmentLanguage: it
+  developmentLanguage: en
   deploymentTarget:
     iOS: "17.0"
 
