@@ -5,7 +5,7 @@ import Accelerate
 @MainActor
 final class AcousticEngine: ObservableObject {
     @Published var isRunning = false
-    @Published var status = "Pronto"
+    @Published var status = NSLocalizedString("Pronto", comment: "")
     @Published var progress: Double = 0
     @Published var beforeIndex: Int?
     @Published var afterIndex: Int?
@@ -107,7 +107,9 @@ final class AcousticEngine: ObservableObject {
             try await prepare()
             isRunning = true
             progress = 0
-            status = reference ? "Misura iniziale…" : "Misura di verifica…"
+            status = reference
+                ? NSLocalizedString("Misura iniziale…", comment: "")
+                : NSLocalizedString("Misura di verifica…", comment: "")
 
             var bands: [Float] = []
 
@@ -130,12 +132,12 @@ final class AcousticEngine: ObservableObject {
                 afterBands = []
                 afterIndex = nil
                 deltaPercent = nil
-                status = "Riferimento acquisito. Esegui una pulizia e poi verifica."
+                status = NSLocalizedString("Riferimento acquisito. Esegui una pulizia e poi verifica.", comment: "")
             } else {
                 afterBands = bands
                 afterIndex = index
                 deltaPercent = improvement(from: beforeBands, to: afterBands)
-                status = "Confronto completato."
+                status = NSLocalizedString("Confronto completato.", comment: "")
             }
 
             isRunning = false
@@ -162,7 +164,7 @@ final class AcousticEngine: ObservableObject {
 
     func waterRescue() async {
         await clean(
-            name: "Water Rescue",
+            name: NSLocalizedString("Water Rescue", comment: ""),
             frequencies: [165, 155, 145, 135, 125, 115, 105, 120, 140, 160],
             toneMilliseconds: 250,
             pauseMilliseconds: 65,
@@ -172,7 +174,7 @@ final class AcousticEngine: ObservableObject {
 
     func dustRescue() async {
         await clean(
-            name: "Dust Rescue",
+            name: NSLocalizedString("Dust Rescue", comment: ""),
             frequencies: [120, 210, 145, 240, 130, 190, 110, 225, 155, 200, 125, 250],
             toneMilliseconds: 115,
             pauseMilliseconds: 30,
@@ -182,7 +184,7 @@ final class AcousticEngine: ObservableObject {
 
     func adaptiveClean() async {
         await clean(
-            name: "Adaptive Clean",
+            name: NSLocalizedString("Adaptive Clean", comment: ""),
             frequencies: [110, 140, 180, 220, 250, 205, 165, 125, 235, 150, 195, 115, 245, 175],
             toneMilliseconds: 145,
             pauseMilliseconds: 38,
@@ -203,7 +205,10 @@ final class AcousticEngine: ObservableObject {
             try await prepare()
             isRunning = true
             progress = 0
-            status = "\(name) in corso…"
+            status = String(
+                format: NSLocalizedString("%@ in corso…", comment: ""),
+                name
+            )
 
             for (index, frequency) in frequencies.enumerated() {
                 try playTone(
@@ -220,7 +225,10 @@ final class AcousticEngine: ObservableObject {
             }
 
             isRunning = false
-            status = "\(name) completato."
+            status = String(
+                format: NSLocalizedString("%@ completato.", comment: ""),
+                name
+            )
         } catch {
             handle(error)
         }
@@ -339,11 +347,11 @@ enum AcousticError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .microphoneDenied:
-            return "Permesso microfono negato. Abilitalo nelle Impostazioni di iOS."
+            return NSLocalizedString("Permesso microfono negato. Abilitalo nelle Impostazioni di iOS.", comment: "")
         case .audioInputUnavailable:
-            return "Ingresso microfono non disponibile. Scollega eventuali dispositivi audio e riprova."
+            return NSLocalizedString("Ingresso microfono non disponibile. Scollega eventuali dispositivi audio e riprova.", comment: "")
         case .audioOutputUnavailable:
-            return "Uscita audio non disponibile. Scollega eventuali dispositivi audio e riprova."
+            return NSLocalizedString("Uscita audio non disponibile. Scollega eventuali dispositivi audio e riprova.", comment: "")
         }
     }
 }
