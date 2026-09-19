@@ -53,8 +53,8 @@ struct QuickGuideView: View {
 
     private func guideStep(
         number: String,
-        title: String,
-        text: String
+        title: LocalizedStringKey,
+        text: LocalizedStringKey
     ) -> some View {
         HStack(alignment: .top, spacing: 14) {
             Text(number)
