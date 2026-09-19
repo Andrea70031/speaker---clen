@@ -301,11 +301,13 @@ struct ContentView: View {
         return "—"
     }
 
-    private var scoreCaption: String {
-        engine.beforeIndex == nil ? "NESSUN RIFERIMENTO" : "RESPONSE INDEX"
+    private var scoreCaption: LocalizedStringKey {
+        engine.beforeIndex == nil
+            ? LocalizedStringKey("NESSUN RIFERIMENTO")
+            : LocalizedStringKey("RESPONSE INDEX")
     }
 
-    private func statusPill(icon: String, text: String, color: Color) -> some View {
+    private func statusPill(icon: String, text: LocalizedStringKey, color: Color) -> some View {
         Label(text, systemImage: icon)
             .font(.caption.weight(.semibold))
             .padding(.horizontal, 11)
@@ -314,7 +316,7 @@ struct ContentView: View {
             .foregroundStyle(color)
     }
 
-    private func metricCard(title: String, value: String, icon: String) -> some View {
+    private func metricCard(title: LocalizedStringKey, value: String, icon: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Image(systemName: icon).font(.caption).foregroundStyle(.secondary)
             Text(value).font(.title3.bold()).contentTransition(.numericText())
@@ -326,8 +328,8 @@ struct ContentView: View {
     }
 
     private func rescueCard(
-        title: String,
-        subtitle: String,
+        title: LocalizedStringKey,
+        subtitle: LocalizedStringKey,
         icon: String,
         tint: Color,
         action: @escaping () -> Void
@@ -354,7 +356,7 @@ struct ContentView: View {
         .disabled(engine.isRunning)
     }
 
-    private func insightRow(icon: String, title: String, value: String) -> some View {
+    private func insightRow(icon: String, title: LocalizedStringKey, value: LocalizedStringKey) -> some View {
         HStack {
             Label(title, systemImage: icon).foregroundStyle(.secondary)
             Spacer()
