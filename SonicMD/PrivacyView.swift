@@ -57,7 +57,7 @@ struct PrivacyView: View {
     }
 
     @ViewBuilder
-    private func section(title: String, text: String) -> some View {
+    private func section(title: LocalizedStringKey, text: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.headline)
             Text(text).foregroundStyle(.secondary)
