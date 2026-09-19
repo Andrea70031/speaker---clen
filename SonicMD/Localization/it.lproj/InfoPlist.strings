@@ -1,0 +1,4 @@
+/* Sonic MD — Italiano */
+"CFBundleDisplayName" = "Sonic MD";
+"NSMicrophoneUsageDescription" = "Sonic MD usa il microfono per confrontare localmente la risposta acustica dell'altoparlante prima e dopo una sessione. L'audio non viene inviato a server esterni.";
+"NSUserTrackingUsageDescription" = "Sonic MD può usare l'identificatore del dispositivo per mostrare annunci più pertinenti e misurarne le prestazioni. Puoi rifiutare senza limitare le funzioni dell'app.";
