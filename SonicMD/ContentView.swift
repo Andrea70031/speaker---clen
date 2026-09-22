@@ -2,6 +2,7 @@ import SwiftUI
 import UIKit
 import AVFoundation
 import MediaPlayer
+import Combine
 
 struct ContentView: View {
     @EnvironmentObject private var engine: AcousticEngine
