@@ -12,12 +12,18 @@ struct QuickGuideView: View {
 
                     guideStep(
                         number: "1",
+                        title: "Volume al massimo",
+                        text: "Prima di avviare Smart Scan o una modalità di pulizia, porta sempre il volume dell’iPhone al massimo."
+                    )
+
+                    guideStep(
+                        number: "2",
                         title: "Togli la custodia",
                         text: "Per un confronto più stabile, usa il telefono senza custodie che coprono o modificano l'uscita audio."
                     )
 
                     guideStep(
-                        number: "2",
+                        number: "3",
                         title: "Ambiente silenzioso",
                         text: "Riduci musica, TV e conversazioni vicine durante le misure Prima e Dopo."
                     )
@@ -29,7 +35,7 @@ struct QuickGuideView: View {
                     )
 
                     guideStep(
-                        number: "4",
+                        number: "5",
                         title: "Usa Guided Clean",
                         text: "Per il test più semplice esegui il ciclo completo: Smart Scan, Adaptive Clean e verifica finale."
                     )
