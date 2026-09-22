@@ -1,5 +1,7 @@
 import SwiftUI
 import UIKit
+import AVFoundation
+import MediaPlayer
 
 struct ContentView: View {
     @EnvironmentObject private var engine: AcousticEngine
@@ -8,6 +10,8 @@ struct ContentView: View {
     @State private var showHistory = false
     @State private var showGuide = false
     @State private var showPrivacy = false
+    @State private var showVolumeRequirement = false
+    @State private var pendingAudioAction: AudioAction?
 
     var body: some View {
         NavigationStack {
@@ -27,6 +31,7 @@ struct ContentView: View {
                     VStack(spacing: 22) {
                         hero
                         quickStatus
+                        volumeReminder
                         mainActions
                         rescueSection
                         insightsCard
@@ -80,6 +85,18 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showPrivacy) {
             PrivacyView()
+        }
+        .sheet(isPresented: $showVolumeRequirement) {
+            VolumeRequirementSheet(
+                onReady: {
+                    showVolumeRequirement = false
+                    runPendingAudioAction()
+                },
+                onCancel: {
+                    pendingAudioAction = nil
+                    showVolumeRequirement = false
+                }
+            )
         }
         .alert("Microfono necessario", isPresented: $engine.microphonePermissionDenied) {
             Button("Annulla", role: .cancel) { }
@@ -174,6 +191,35 @@ struct ContentView: View {
         }
     }
 
+    private var volumeReminder: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "speaker.wave.3.fill")
+                .font(.title2)
+                .foregroundStyle(.orange)
+                .frame(width: 38, height: 38)
+                .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("VOLUME AL MASSIMO")
+                    .font(.caption.weight(.bold))
+                    .tracking(0.9)
+                    .foregroundStyle(.orange)
+
+                Text("Prima di ogni funzione, porta il volume dell’iPhone al massimo per rendere efficaci i segnali acustici.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(.orange.opacity(0.18), lineWidth: 1)
+        }
+    }
+
     private var mainActions: some View {
         VStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 12) {
@@ -197,7 +243,7 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 Button {
-                    Task { await engine.measure(reference: engine.beforeBands.isEmpty) }
+                    requestAudioAction(.smartScan(reference: engine.beforeBands.isEmpty))
                 } label: {
                     Label(
                         engine.beforeBands.isEmpty ? "Avvia Smart Scan" : "Verifica risultato",
@@ -213,7 +259,7 @@ struct ContentView: View {
             .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
 
             Button {
-                Task { await engine.fullCycle() }
+                requestAudioAction(.guidedClean)
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "sparkles").font(.title2)
@@ -250,10 +296,10 @@ struct ContentView: View {
 
             HStack(spacing: 10) {
                 rescueCard(title: "Water", subtitle: "Basse frequenze", icon: "drop.fill", tint: .cyan) {
-                    Task { await engine.waterRescue() }
+                    requestAudioAction(.waterRescue)
                 }
                 rescueCard(title: "Dust", subtitle: "Impulsi rapidi", icon: "sparkles", tint: .orange) {
-                    Task { await engine.dustRescue() }
+                    requestAudioAction(.dustRescue)
                 }
             }
 
@@ -263,7 +309,7 @@ struct ContentView: View {
                 icon: "waveform.path",
                 tint: .purple
             ) {
-                Task { await engine.adaptiveClean() }
+                requestAudioAction(.adaptiveClean)
             }
         }
     }
@@ -356,6 +402,38 @@ struct ContentView: View {
         .disabled(engine.isRunning)
     }
 
+    private func requestAudioAction(_ action: AudioAction) {
+        let currentVolume = AVAudioSession.sharedInstance().outputVolume
+
+        if currentVolume >= 0.99 {
+            runAudioAction(action)
+        } else {
+            pendingAudioAction = action
+            showVolumeRequirement = true
+        }
+    }
+
+    private func runPendingAudioAction() {
+        guard let action = pendingAudioAction else { return }
+        pendingAudioAction = nil
+        runAudioAction(action)
+    }
+
+    private func runAudioAction(_ action: AudioAction) {
+        switch action {
+        case .smartScan(let reference):
+            Task { await engine.measure(reference: reference) }
+        case .guidedClean:
+            Task { await engine.fullCycle() }
+        case .waterRescue:
+            Task { await engine.waterRescue() }
+        case .dustRescue:
+            Task { await engine.dustRescue() }
+        case .adaptiveClean:
+            Task { await engine.adaptiveClean() }
+        }
+    }
+
     private func insightRow(icon: String, title: LocalizedStringKey, value: LocalizedStringKey) -> some View {
         HStack {
             Label(title, systemImage: icon).foregroundStyle(.secondary)
@@ -365,3 +443,101 @@ struct ContentView: View {
         .font(.subheadline)
     }
 }
+
+private enum AudioAction {
+    case smartScan(reference: Bool)
+    case guidedClean
+    case waterRescue
+    case dustRescue
+    case adaptiveClean
+}
+
+private struct VolumeRequirementSheet: View {
+    let onReady: () -> Void
+    let onCancel: () -> Void
+
+    @State private var volume = AVAudioSession.sharedInstance().outputVolume
+    private let timer = Timer.publish(every: 0.15, on: .main, in: .common).autoconnect()
+
+    private var isReady: Bool {
+        volume >= 0.99
+    }
+
+    var body: some View {
+        VStack(spacing: 20) {
+            ZStack {
+                Circle()
+                    .fill((isReady ? Color.green : Color.orange).opacity(0.12))
+                    .frame(width: 76, height: 76)
+
+                Image(systemName: isReady ? "speaker.wave.3.fill" : "speaker.wave.2.fill")
+                    .font(.system(size: 32, weight: .semibold))
+                    .foregroundStyle(isReady ? .green : .orange)
+            }
+
+            VStack(spacing: 8) {
+                Text(isReady ? "Volume pronto" : "Alza il volume al massimo")
+                    .font(.title2.bold())
+
+                Text("Sonic MD usa segnali acustici per questa funzione. Porta il volume dell’iPhone al massimo prima di continuare.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            VStack(spacing: 8) {
+                HStack {
+                    Label("Volume iPhone", systemImage: "speaker.wave.2")
+                    Spacer()
+                    Text("\(Int((volume * 100).rounded()))%")
+                        .font(.headline.monospacedDigit())
+                        .foregroundStyle(isReady ? .green : .orange)
+                }
+
+                SystemVolumeControl()
+                    .frame(height: 34)
+            }
+
+            Text("Non avvicinare l’iPhone all’orecchio durante i segnali.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            HStack(spacing: 12) {
+                Button("Annulla", role: .cancel) {
+                    onCancel()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+
+                Button {
+                    onReady()
+                } label: {
+                    Label("Avvia funzione", systemImage: "play.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(!isReady)
+            }
+        }
+        .padding(24)
+        .presentationDetents([.height(420)])
+        .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled()
+        .onReceive(timer) { _ in
+            volume = AVAudioSession.sharedInstance().outputVolume
+        }
+    }
+}
+
+private struct SystemVolumeControl: UIViewRepresentable {
+    func makeUIView(context: Context) -> MPVolumeView {
+        let view = MPVolumeView(frame: .zero)
+        view.showsRouteButton = false
+        return view
+    }
+
+    func updateUIView(_ uiView: MPVolumeView, context: Context) { }
+}
+
