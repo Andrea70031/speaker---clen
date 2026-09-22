@@ -91,3 +91,13 @@
 "Permesso microfono negato. Abilitalo nelle Impostazioni di iOS." = "Microphone permission denied. Enable it in iOS Settings.";
 "Ingresso microfono non disponibile. Scollega eventuali dispositivi audio e riprova." = "Microphone input is unavailable. Disconnect any audio devices and try again.";
 "Uscita audio non disponibile. Scollega eventuali dispositivi audio e riprova." = "Audio output is unavailable. Disconnect any audio devices and try again.";
+"VOLUME AL MASSIMO" = "MAXIMUM VOLUME";
+"Prima di ogni funzione, porta il volume dell’iPhone al massimo per rendere efficaci i segnali acustici." = "Before each function, set your iPhone volume to maximum so the acoustic signals can work effectively.";
+"Volume pronto" = "Volume ready";
+"Alza il volume al massimo" = "Turn volume all the way up";
+"Sonic MD usa segnali acustici per questa funzione. Porta il volume dell’iPhone al massimo prima di continuare." = "Sonic MD uses acoustic signals for this function. Set your iPhone volume to maximum before continuing.";
+"Volume iPhone" = "iPhone volume";
+"Non avvicinare l’iPhone all’orecchio durante i segnali." = "Do not hold the iPhone close to your ear while the signals are playing.";
+"Avvia funzione" = "Start function";
+"Volume al massimo" = "Maximum volume";
+"Prima di avviare Smart Scan o una modalità di pulizia, porta sempre il volume dell’iPhone al massimo." = "Before starting Smart Scan or a cleaning mode, always set your iPhone volume to maximum.";
