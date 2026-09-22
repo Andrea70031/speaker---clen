@@ -477,7 +477,7 @@ private struct VolumeRequirementSheet: View {
             }
 
             VStack(spacing: 8) {
-                Text(isReady ? "Volume pronto" : "Alza il volume al massimo")
+                Text(isReady ? LocalizedStringKey("Volume pronto") : LocalizedStringKey("Alza il volume al massimo"))
                     .font(.title2.bold())
 
                 Text("Sonic MD usa segnali acustici per questa funzione. Porta il volume dell’iPhone al massimo prima di continuare.")
