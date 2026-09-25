@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#05070b">
+  <meta name="description" content="Sonic MD per iPhone: pulizia speaker, test acustici e confronto prima/dopo direttamente sul dispositivo.">
+  <meta property="og:title" content="Sonic MD — Clean. Test. Compare.">
+  <meta property="og:description" content="Speaker cleaning and acoustic checks for iPhone.">
+  <meta property="og:type" content="website">
+  <title>Sonic MD — Clean. Test. Compare.</title>
+  <style>
+    :root{
+      --bg:#05070b;--bg2:#0a0d14;--card:rgba(255,255,255,.065);--line:rgba(255,255,255,.10);
+      --text:#f7f8fb;--muted:#a7adbb;--blue:#2f8cff;--cyan:#65ddff;--purple:#8c66ff;
+      --green:#54df9a;--shadow:0 30px 90px rgba(0,0,0,.38)
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;color:var(--text);background:
+      radial-gradient(900px 520px at 50% -80px,rgba(47,140,255,.23),transparent 62%),
+      radial-gradient(720px 520px at 82% 38%,rgba(140,102,255,.12),transparent 65%),
+      var(--bg);
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif;
+      -webkit-font-smoothing:antialiased
+    }
+    a{color:inherit;text-decoration:none}
+    .wrap{width:min(1120px,calc(100% - 36px));margin:auto}
+    nav{height:72px;display:flex;align-items:center;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:11px;font-weight:750;letter-spacing:-.35px}
+    .logo{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:
+      radial-gradient(circle at 35% 28%,#97ecff 0 7%,transparent 8%),
+      conic-gradient(from 215deg,var(--blue),var(--cyan),var(--purple),var(--blue));
+      box-shadow:0 0 28px rgba(72,155,255,.36)}
+    .logo:after{content:"";width:18px;height:18px;border-radius:50%;background:#070910;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+    .navlinks{display:flex;gap:20px;align-items:center;color:var(--muted);font-size:14px}
+    .navlinks a:hover{color:#fff}
+    .lang{border:1px solid var(--line);background:var(--card);color:#fff;border-radius:999px;padding:8px 11px;cursor:pointer}
+    .hero{min-height:720px;display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:44px;padding:62px 0 80px}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;color:#b7c8e8;font-size:13px;font-weight:700;letter-spacing:.10em;text-transform:uppercase}
+    .eyebrow:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 18px rgba(84,223,154,.7)}
+    h1{font-size:clamp(58px,7vw,94px);line-height:.94;letter-spacing:-.065em;margin:18px 0 22px;max-width:800px}
+    .grad{background:linear-gradient(115deg,#fff 18%,#9beaff 55%,#8d78ff 88%);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .lead{font-size:clamp(19px,2vw,24px);line-height:1.5;color:var(--muted);max-width:650px;margin:0 0 30px}
+    .cta{display:flex;gap:12px;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:0 21px;border-radius:15px;font-weight:720;border:1px solid var(--line);transition:.2s}
+    .btn.primary{background:#fff;color:#090b10;border-color:#fff}
+    .btn.secondary{background:var(--card);backdrop-filter:blur(14px)}
+    .btn:hover{transform:translateY(-2px)}
+    .store-note{font-size:12px;color:#7f8798;margin-top:13px}
+    .phonewrap{display:flex;justify-content:center;position:relative}
+    .glow{position:absolute;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(47,140,255,.22),rgba(104,77,255,.08) 45%,transparent 68%);filter:blur(8px)}
+    .phone{width:310px;aspect-ratio:9/19.3;border-radius:48px;background:#06080d;border:1px solid rgba(255,255,255,.18);box-shadow:var(--shadow),inset 0 0 0 7px #151923;position:relative;padding:22px 18px;overflow:hidden;transform:rotate(2.5deg)}
+    .phone:before{content:"";position:absolute;top:12px;left:50%;translate:-50%;width:96px;height:26px;border-radius:20px;background:#000}
+    .screen{height:100%;border-radius:34px;background:
+      radial-gradient(260px 230px at 50% 24%,rgba(47,140,255,.22),transparent 68%),
+      linear-gradient(#080a10,#04060a);padding:48px 18px 18px;display:flex;flex-direction:column}
+    .appname{font-weight:700;font-size:14px}
+    .ring{width:168px;height:168px;border-radius:50%;margin:58px auto 22px;padding:6px;background:conic-gradient(from 210deg,var(--blue),var(--cyan),var(--purple),var(--blue));box-shadow:0 0 38px rgba(47,140,255,.18)}
+    .ringin{width:100%;height:100%;border-radius:50%;background:#070a10;display:grid;place-items:center;text-align:center}
+    .ringin b{display:block;font-size:44px;letter-spacing:-2px}.ringin span{font-size:9px;color:#8f96a5;letter-spacing:.12em}
+    .mini{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:auto}
+    .mini div{border:1px solid var(--line);background:rgba(255,255,255,.045);border-radius:13px;padding:10px 8px}
+    .mini small{display:block;color:#7f8798;font-size:8px;margin-bottom:3px}.mini b{font-size:12px}
+    .section{padding:110px 0}
+    .section h2{font-size:clamp(38px,5vw,64px);letter-spacing:-.05em;line-height:1.02;margin:0 0 16px}
+    .sectionlead{color:var(--muted);font-size:19px;line-height:1.55;max-width:720px;margin:0 0 42px}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .card{border:1px solid var(--line);background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.035));border-radius:26px;padding:25px;min-height:230px;box-shadow:0 14px 45px rgba(0,0,0,.15)}
+    .icon{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:21px;background:linear-gradient(145deg,rgba(101,221,255,.20),rgba(140,102,255,.16));border:1px solid rgba(255,255,255,.10)}
+    .card h3{font-size:21px;letter-spacing:-.02em;margin:26px 0 8px}.card p{color:var(--muted);line-height:1.55;margin:0;font-size:15px}
+    .privacy{display:grid;grid-template-columns:.9fr 1.1fr;gap:16px}
+    .privacy .big{min-height:360px;display:flex;flex-direction:column;justify-content:flex-end}
+    .privacy .big .mark{font-size:54px;margin-bottom:auto}
+    .checklist{display:grid;gap:12px}
+    .check{display:flex;gap:13px;padding:17px 18px;border-radius:20px;background:var(--card);border:1px solid var(--line);color:#dfe4ed}
+    .check i{font-style:normal;color:var(--green);font-weight:800}
+    .final{padding:80px 0 120px;text-align:center}
+    .finalbox{border:1px solid var(--line);border-radius:34px;padding:64px 24px;background:
+      radial-gradient(600px 260px at 50% 0,rgba(47,140,255,.16),transparent 70%),rgba(255,255,255,.04)}
+    .final h2{font-size:clamp(42px,6vw,72px);letter-spacing:-.055em;margin:0 0 14px}.final p{color:var(--muted);font-size:18px;margin:0 0 28px}
+    footer{border-top:1px solid var(--line);padding:26px 0 42px;color:#7f8798;font-size:13px}
+    .foot{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}.footlinks{display:flex;gap:18px}
+    [data-en]{display:none}
+    body.en [data-it]{display:none} body.en [data-en]{display:initial}
+    @media(max-width:860px){
+      .navlinks a:not(.keep){display:none}.hero{grid-template-columns:1fr;padding-top:34px}.hero-copy{text-align:center}.lead{margin-left:auto;margin-right:auto}.cta{justify-content:center}.store-note{text-align:center}
+      .phone{width:278px}.grid{grid-template-columns:1fr 1fr}.privacy{grid-template-columns:1fr}
+    }
+    @media(max-width:560px){
+      .wrap{width:min(100% - 24px,1120px)}nav{height:62px}.hero{min-height:auto;padding:38px 0 64px;gap:48px}h1{font-size:56px}.lead{font-size:18px}.phone{width:250px;border-radius:40px}.section{padding:78px 0}.grid{grid-template-columns:1fr}.card{min-height:0}.final{padding-top:40px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav>
+      <a class="brand" href="#"><span class="logo"></span><span>Sonic MD</span></a>
+      <div class="navlinks">
+        <a href="#features"><span data-it>Funzioni</span><span data-en>Features</span></a>
+        <a href="#privacy"><span data-it>Privacy</span><span data-en>Privacy</span></a>
+        <a class="keep" href="support/"><span data-it>Supporto</span><span data-en>Support</span></a>
+        <button class="lang" id="langBtn" aria-label="Cambia lingua">EN</button>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow"><span data-it>Utility acustica per iPhone</span><span data-en>Acoustic utility for iPhone</span></div>
+        <h1><span class="grad">Clean. Test.<br>Compare.</span></h1>
+        <p class="lead" data-it>Pulisci gli speaker con sequenze audio dedicate, esegui controlli acustici e confronta la risposta prima e dopo — direttamente sul tuo iPhone.</p>
+        <p class="lead" data-en>Clean your speakers with dedicated audio sequences, run acoustic checks and compare before vs. after — directly on your iPhone.</p>
+        <div class="cta">
+          <a class="btn primary" href="https://apps.apple.com/app/id6809872565" rel="noopener"><span data-it>Apri su App Store</span><span data-en>View on the App Store</span></a>
+          <a class="btn secondary" href="#features"><span data-it>Scopri le funzioni</span><span data-en>Explore features</span></a>
+        </div>
+        <div class="store-note" data-it>Disponibile gratuitamente con pubblicità.</div>
+        <div class="store-note" data-en>Available free with advertising.</div>
+      </div>
+
+      <div class="phonewrap" aria-hidden="true">
+        <div class="glow"></div>
+        <div class="phone">
+          <div class="screen">
+            <div class="appname">Sonic MD</div>
+            <div class="ring"><div class="ringin"><div><b>86</b><span>RESPONSE INDEX</span></div></div></div>
+            <div class="mini">
+              <div><small>BEFORE</small><b>71</b></div>
+              <div><small>AFTER</small><b>86</b></div>
+              <div><small>CHANGE</small><b>+21%</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <main>
+    <section class="section" id="features">
+      <div class="wrap">
+        <h2 data-it>Un kit completo per gli speaker.</h2>
+        <h2 data-en>A complete toolkit for your speakers.</h2>
+        <p class="sectionlead" data-it>Sonic MD riunisce pulizia guidata, test comparativi e modalità dedicate a contaminanti comuni come acqua, polvere e sabbia.</p>
+        <p class="sectionlead" data-en>Sonic MD combines guided cleaning, comparative tests and dedicated modes for common contaminants such as water, dust and sand.</p>
+        <div class="grid">
+          <article class="card"><div class="icon">◎</div><h3>Smart Scan</h3><p data-it>Misura comparativa della risposta acustica per creare un riferimento prima e dopo la pulizia.</p><p data-en>Comparative acoustic response measurement to create a before-and-after reference.</p></article>
+          <article class="card"><div class="icon">◉</div><h3>Water Rescue</h3><p data-it>Sequenze a bassa frequenza progettate per aiutare a espellere residui d'acqua dagli speaker.</p><p data-en>Low-frequency sequences designed to help expel residual water from the speakers.</p></article>
+          <article class="card"><div class="icon">✦</div><h3>Dust Rescue</h3><p data-it>Impulsi brevi e ripetuti per provare a liberare la griglia da particelle leggere.</p><p data-en>Short repeated pulses to help clear light particles from the speaker grille.</p></article>
+          <article class="card"><div class="icon">⌁</div><h3>Adaptive Clean</h3><p data-it>Pattern dinamici multi-frequenza per una sessione di pulizia più completa.</p><p data-en>Dynamic multi-frequency patterns for a more complete cleaning session.</p></article>
+          <article class="card"><div class="icon">↗</div><h3>Before / After</h3><p data-it>Confronta i risultati della stessa sessione e visualizza la variazione rilevata.</p><p data-en>Compare results from the same session and view the measured change.</p></article>
+          <article class="card"><div class="icon">◌</div><h3 data-it>Cronologia locale</h3><h3 data-en>Local history</h3><p data-it>Le sessioni possono restare sul dispositivo, senza richiedere un account Sonic MD.</p><p data-en>Sessions can remain on your device, with no Sonic MD account required.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="privacy">
+      <div class="wrap">
+        <div class="privacy">
+          <article class="card big">
+            <div class="mark">◈</div>
+            <h2 data-it>Privacy pensata prima.</h2>
+            <h2 data-en>Privacy first.</h2>
+            <p class="sectionlead" data-it style="margin:0">Le funzioni acustiche principali sono progettate per essere elaborate localmente sul dispositivo.</p>
+            <p class="sectionlead" data-en style="margin:0">Core acoustic features are designed to be processed locally on the device.</p>
+          </article>
+          <div class="checklist">
+            <div class="check"><i>✓</i><span data-it>Nessun account obbligatorio per usare le funzioni principali.</span><span data-en>No account required for core features.</span></div>
+            <div class="check"><i>✓</i><span data-it>I campioni del microfono usati dai test acustici non vengono caricati sui server Sonic MD.</span><span data-en>Microphone samples used by acoustic checks are not uploaded to Sonic MD servers.</span></div>
+            <div class="check"><i>✓</i><span data-it>Le preferenze e la cronologia dell'app possono essere conservate localmente sul dispositivo.</span><span data-en>App preferences and history can be stored locally on the device.</span></div>
+            <div class="check"><i>✓</i><span data-it>La pubblicità è gestita tramite Google AdMob secondo le preferenze di consenso applicabili.</span><span data-en>Advertising is provided through Google AdMob subject to applicable consent choices.</span></div>
+            <div class="check"><i>i</i><span data-it>Sonic MD è un'utility comparativa: non è uno strumento diagnostico hardware o medico certificato.</span><span data-en>Sonic MD is a comparative utility, not a certified hardware or medical diagnostic tool.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final">
+      <div class="wrap">
+        <div class="finalbox">
+          <h2>Hear the difference.</h2>
+          <p data-it>Pulisci. Misura. Confronta.</p>
+          <p data-en>Clean. Measure. Compare.</p>
+          <a class="btn primary" href="https://apps.apple.com/app/id6809872565" rel="noopener"><span data-it>Apri Sonic MD su App Store</span><span data-en>View Sonic MD on the App Store</span></a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap foot">
+      <div>© 2026 Sonic MD · Andrea Ferrari</div>
+      <div class="footlinks"><a href="support/">Support</a><a href="privacy/">Privacy</a></div>
+    </div>
+  </footer>
+
+  <script>
+    const btn=document.getElementById('langBtn');
+    const preferred=(navigator.language||'it').toLowerCase().startsWith('it')?'it':'en';
+    function setLang(v){document.body.classList.toggle('en',v==='en');document.documentElement.lang=v;btn.textContent=v==='it'?'EN':'IT';localStorage.setItem('sonic-site-lang',v)}
+    setLang(localStorage.getItem('sonic-site-lang')||preferred);
+    btn.addEventListener('click',()=>setLang(document.body.classList.contains('en')?'it':'en'));
+  </script>
+</body>
+</html>
