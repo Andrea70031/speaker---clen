@@ -71,7 +71,7 @@ workflows:
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/Debug-iphonesimulator/*.app
 
   ios-testflight:
-    name: Sonic MD 1.1 - TestFlight
+    name: Sonic MD 1.2 - TestFlight
     max_build_duration: 120
     instance_type: mac_mini_m2
     integrations:
@@ -132,7 +132,7 @@ workflows:
           SETTINGS=$(xcodebuild -project SonicMD.xcodeproj -scheme SonicMD -showBuildSettings)
           echo "$SETTINGS" | grep -E 'TARGETED_DEVICE_FAMILY = 1$'
           echo "$SETTINGS" | grep -E 'INFOPLIST_FILE = SonicMD/Info.plist$'
-          echo "$SETTINGS" | grep -E 'CURRENT_PROJECT_VERSION = 9$'
+          echo "$SETTINGS" | grep -E 'CURRENT_PROJECT_VERSION = 10$'
       - name: Apply signing profiles
         script: |
           set -euo pipefail
@@ -172,8 +172,8 @@ workflows:
               p = plistlib.load(f)
           wanted = {
               'CFBundleIdentifier': 'com.andrea70031.sonicmd',
-              'CFBundleShortVersionString': '1.1.0',
-              'CFBundleVersion': '9',
+              'CFBundleShortVersionString': '1.2.0',
+              'CFBundleVersion': '10',
               'CFBundleLocalizations': ['it', 'en'],
               'UIRequiresFullScreen': True,
               'GADApplicationIdentifier': 'ca-app-pub-2013766674591751~6839959210',
