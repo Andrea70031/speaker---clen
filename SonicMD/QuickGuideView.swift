@@ -12,8 +12,8 @@ struct QuickGuideView: View {
 
                     guideStep(
                         number: "1",
-                        title: "Volume al massimo",
-                        text: "Prima di avviare Smart Scan o una modalità di pulizia, porta sempre il volume dell’iPhone al massimo."
+                        title: "Volume moderato e uscita speaker",
+                        text: "Imposta il volume circa al 50–70%, scollega cuffie e Bluetooth. Non avvicinare l'iPhone all'orecchio."
                     )
 
                     guideStep(
@@ -29,15 +29,15 @@ struct QuickGuideView: View {
                     )
 
                     guideStep(
-                        number: "3",
+                        number: "4",
                         title: "Non spostare l'iPhone",
                         text: "Mantieni posizione e orientamento il più possibile identici tra le due misure."
                     )
 
                     guideStep(
                         number: "5",
-                        title: "Usa Guided Clean",
-                        text: "Per il test più semplice esegui il ciclo completo: Smart Scan, Adaptive Clean e verifica finale."
+                        title: "Usa Sonic Auto Clean",
+                        text: "Avvia il ciclo automatico con un tocco: Smart Scan, pulizia bilanciata e confronto finale. Usa Interrompi se senti suoni anomali."
                     )
 
                     Text("I risultati sono comparativi e non costituiscono una diagnosi hardware certificata.")

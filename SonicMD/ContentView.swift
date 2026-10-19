@@ -14,6 +14,8 @@ struct ContentView: View {
     @State private var showVolumeRequirement = false
     @State private var pendingAudioAction: AudioAction?
 
+    private var audioBusy: Bool { engine.isRunning || engine.isAutoWorkflow }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -33,7 +35,9 @@ struct ContentView: View {
                         hero
                         quickStatus
                         volumeReminder
+                        if audioBusy { stopButton }
                         mainActions
+                        if !engine.autoConclusion.isEmpty { autoResultCard }
                         rescueSection
                         insightsCard
                         footer
@@ -170,9 +174,9 @@ struct ContentView: View {
 
             HStack(spacing: 8) {
                 statusPill(
-                    icon: engine.isRunning ? "waveform" : "checkmark.circle.fill",
-                    text: engine.isRunning ? "Analisi in corso" : "Sistema pronto",
-                    color: engine.isRunning ? .blue : .green
+                    icon: audioBusy ? "waveform" : "checkmark.circle.fill",
+                    text: audioBusy ? "Analisi in corso" : "Sistema pronto",
+                    color: audioBusy ? .blue : .green
                 )
                 statusPill(icon: "speaker.wave.2.fill", text: "Speaker", color: .cyan)
             }
@@ -201,12 +205,12 @@ struct ContentView: View {
                 .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("VOLUME AL MASSIMO")
+                Text("VOLUME CONSIGLIATO")
                     .font(.caption.weight(.bold))
                     .tracking(0.9)
                     .foregroundStyle(.orange)
 
-                Text("Prima di ogni funzione, porta il volume dell’iPhone al massimo per rendere efficaci i segnali acustici.")
+                Text("Per le funzioni audio usa un volume moderato (circa 50–70%). Scollega cuffie e Bluetooth; non avvicinare il telefono all'orecchio.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -219,6 +223,34 @@ struct ContentView: View {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .stroke(.orange.opacity(0.18), lineWidth: 1)
         }
+    }
+
+    private var stopButton: some View {
+        Button(role: .destructive) {
+            engine.stop()
+        } label: {
+            Label("Interrompi sessione", systemImage: "stop.fill")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .tint(.red)
+        .controlSize(.large)
+    }
+
+    private var autoResultCard: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            Label("Risultato Auto Clean", systemImage: "chart.bar.xaxis")
+                .font(.headline)
+            Text(engine.autoConclusion)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Text("La variazione dipende anche dall'ambiente, dal volume e dalla posizione del dispositivo.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 
     private var mainActions: some View {
@@ -254,19 +286,19 @@ struct ContentView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
-                .disabled(engine.isRunning)
+                .disabled(audioBusy)
             }
             .padding(18)
             .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
 
             Button {
-                requestAudioAction(.guidedClean)
+                requestAudioAction(.autoClean)
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "sparkles").font(.title2)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Guided Clean").font(.headline)
-                        Text("Scan → Adaptive Clean → verifica")
+                        Text("Sonic Auto Clean").font(.headline)
+                        Text("Un tocco: misura → pulizia → verifica")
                             .font(.caption)
                             .opacity(0.82)
                     }
@@ -283,7 +315,7 @@ struct ContentView: View {
                 in: RoundedRectangle(cornerRadius: 24, style: .continuous)
             )
             .shadow(color: .blue.opacity(0.18), radius: 20, y: 10)
-            .disabled(engine.isRunning)
+            .disabled(audioBusy)
         }
     }
 
@@ -296,7 +328,7 @@ struct ContentView: View {
             }
 
             HStack(spacing: 10) {
-                rescueCard(title: "Water", subtitle: "Basse frequenze", icon: "drop.fill", tint: .cyan) {
+                rescueCard(title: "Water Plus", subtitle: "2 cicli con pause protette", icon: "drop.fill", tint: .cyan) {
                     requestAudioAction(.waterRescue)
                 }
                 rescueCard(title: "Dust", subtitle: "Impulsi rapidi", icon: "sparkles", tint: .orange) {
@@ -400,13 +432,13 @@ struct ContentView: View {
             .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(.plain)
-        .disabled(engine.isRunning)
+        .disabled(audioBusy)
     }
 
     private func requestAudioAction(_ action: AudioAction) {
         let currentVolume = AVAudioSession.sharedInstance().outputVolume
 
-        if currentVolume >= 0.99 {
+        if currentVolume >= 0.35 && currentVolume <= 0.85 {
             runAudioAction(action)
         } else {
             pendingAudioAction = action
@@ -424,8 +456,8 @@ struct ContentView: View {
         switch action {
         case .smartScan(let reference):
             Task { await engine.measure(reference: reference) }
-        case .guidedClean:
-            Task { await engine.fullCycle() }
+        case .autoClean:
+            Task { await engine.autoClean() }
         case .waterRescue:
             Task { await engine.waterRescue() }
         case .dustRescue:
@@ -447,7 +479,7 @@ struct ContentView: View {
 
 private enum AudioAction {
     case smartScan(reference: Bool)
-    case guidedClean
+    case autoClean
     case waterRescue
     case dustRescue
     case adaptiveClean
@@ -461,7 +493,7 @@ private struct VolumeRequirementSheet: View {
     private let timer = Timer.publish(every: 0.15, on: .main, in: .common).autoconnect()
 
     private var isReady: Bool {
-        volume >= 0.99
+        volume >= 0.35 && volume <= 0.85
     }
 
     var body: some View {
@@ -477,10 +509,10 @@ private struct VolumeRequirementSheet: View {
             }
 
             VStack(spacing: 8) {
-                Text(isReady ? LocalizedStringKey("Volume pronto") : LocalizedStringKey("Alza il volume al massimo"))
+                Text(isReady ? LocalizedStringKey("Volume pronto") : LocalizedStringKey("Regola il volume"))
                     .font(.title2.bold())
 
-                Text("Sonic MD usa segnali acustici per questa funzione. Porta il volume dell’iPhone al massimo prima di continuare.")
+                Text("Per un ascolto controllato imposta il volume fra il 35% e l'85% (consigliato 50–70%). La pulizia non richiede il volume massimo.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -523,7 +555,7 @@ private struct VolumeRequirementSheet: View {
             }
         }
         .padding(24)
-        .presentationDetents([.height(420)])
+        .presentationDetents([.height(440)])
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled()
         .onReceive(timer) { _ in

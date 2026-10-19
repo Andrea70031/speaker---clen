@@ -18,6 +18,8 @@ struct TermsView: View {
                     Text("Le funzioni di pulizia non garantiscono la rimozione di acqua, polvere o altri contaminanti.")
                     Text("Non tenere il dispositivo vicino all’orecchio. Interrompi in caso di distorsioni o vibrazioni anomale.")
                     Text("Gli indici sono comparativi e non costituiscono una diagnosi hardware certificata.")
+                    Text("Usa volume moderato, scollega cuffie e Bluetooth e interrompi i segnali in caso di fastidio.")
+                    Text("Se l'iPhone è bagnato, scollega eventuali cavi e segui le indicazioni Apple prima di ricaricarlo o usare app audio.")
                     Text("L’audio del microfono viene elaborato localmente sul dispositivo e non viene inviato a server esterni.")
 
                     NavigationLink {

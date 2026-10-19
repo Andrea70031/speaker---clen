@@ -25,7 +25,7 @@ struct SonicMDApp: App {
                             .background(.ultraThinMaterial)
                         }
 
-                        if consentManager.canRequestAds {
+                        if consentManager.canRequestAds && !engine.isRunning && !engine.isAutoWorkflow {
                             AdMobBannerView()
                                 .frame(height: 60)
                                 .background(.ultraThinMaterial)
