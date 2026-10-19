@@ -16,6 +16,7 @@ final class AcousticEngine: ObservableObject {
     @Published var isAutoWorkflow = false
     @Published var isMeasuring = false
     @Published var completedCycles = 0
+    @Published var lastCleanSucceeded = false
     @Published var autoConclusion = ""
 
     private var stopRequested = false
@@ -190,7 +191,7 @@ final class AcousticEngine: ObservableObject {
 
         status = NSLocalizedString("Auto Clean · 2/3: pulizia bilanciata", comment: "")
         await adaptiveClean()
-        guard !stopRequested else {
+        guard !stopRequested, lastCleanSucceeded else {
             isAutoWorkflow = false
             return
         }
@@ -226,6 +227,9 @@ final class AcousticEngine: ObservableObject {
 
     private func checkCancellation() throws {
         if stopRequested || Task.isCancelled { throw AcousticError.cancelled }
+        if !session.currentRoute.outputs.contains(where: { $0.portType == .builtInSpeaker }) {
+            throw AcousticError.externalAudioRoute
+        }
     }
 
     func waterRescue() async {
@@ -268,6 +272,7 @@ final class AcousticEngine: ObservableObject {
     ) async {
         guard !isRunning else { return }
         if !isAutoWorkflow { stopRequested = false }
+        lastCleanSucceeded = false
 
         do {
             try await prepare(requiresMicrophone: false)
@@ -297,6 +302,7 @@ final class AcousticEngine: ObservableObject {
             try checkCancellation()
             player.stop()
             isRunning = false
+            lastCleanSucceeded = true
             status = String(
                 format: NSLocalizedString("%@ completato.", comment: ""),
                 name
