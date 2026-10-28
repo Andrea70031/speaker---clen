@@ -22,7 +22,7 @@ struct ContentView: View {
                 LinearGradient(
                     colors: [
                         Color(.systemGroupedBackground),
-                        Color.blue.opacity(0.05),
+                        Color.cyan.opacity(0.12),
                         Color(.systemGroupedBackground)
                     ],
                     startPoint: .top,
@@ -136,7 +136,7 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
 
             Text("Speaker Health")
-                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .font(.system(size: 36, weight: .bold, design: .rounded))
 
             Text("Analizza, pulisci e confronta la risposta acustica del tuo iPhone.")
                 .font(.subheadline)
@@ -144,13 +144,13 @@ struct ContentView: View {
                 .multilineTextAlignment(.center)
 
             ZStack {
-                Circle().fill(.ultraThinMaterial)
+                Circle().fill(.ultraThinMaterial).overlay { Circle().stroke(.white.opacity(0.45), lineWidth: 1) }
                 Circle().stroke(Color.primary.opacity(0.06), lineWidth: 12)
                 Circle()
                     .trim(from: 0, to: max(engine.progress, engine.beforeIndex == nil ? 0.04 : 1))
                     .stroke(
                         AngularGradient(
-                            colors: [.cyan, .blue, .indigo, .purple, .cyan],
+                            colors: [.cyan, .blue, .indigo, .cyan],
                             center: .center
                         ),
                         style: StrokeStyle(lineWidth: 12, lineCap: .round)
@@ -170,7 +170,7 @@ struct ContentView: View {
                 }
             }
             .frame(width: 218, height: 218)
-            .shadow(color: .blue.opacity(0.12), radius: 26, y: 12)
+            .shadow(color: .cyan.opacity(0.22), radius: 30, y: 14)
 
             HStack(spacing: 8) {
                 statusPill(
@@ -289,7 +289,7 @@ struct ContentView: View {
                 .disabled(audioBusy)
             }
             .padding(18)
-            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
 
             Button {
                 requestAudioAction(.autoClean)
@@ -311,7 +311,7 @@ struct ContentView: View {
             .buttonStyle(.plain)
             .foregroundStyle(.white)
             .background(
-                LinearGradient(colors: [.blue, .indigo], startPoint: .topLeading, endPoint: .bottomTrailing),
+                LinearGradient(colors: [.cyan, .blue, .indigo], startPoint: .topLeading, endPoint: .bottomTrailing),
                 in: RoundedRectangle(cornerRadius: 24, style: .continuous)
             )
             .shadow(color: .blue.opacity(0.18), radius: 20, y: 10)
@@ -322,7 +322,7 @@ struct ContentView: View {
     private var rescueSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Rescue Modes").font(.title2.bold())
+                Text("Modalità pulizia").font(.title2.bold())
                 Spacer()
                 Text("MANUALE").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
             }
