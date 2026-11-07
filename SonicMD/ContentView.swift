@@ -13,6 +13,7 @@ struct ContentView: View {
     @State private var showPrivacy = false
     @State private var showVolumeRequirement = false
     @State private var pendingAudioAction: AudioAction?
+    @State private var volumePreviouslyConfirmed = false
 
     private var audioBusy: Bool { engine.isRunning || engine.isAutoWorkflow }
 
@@ -94,6 +95,9 @@ struct ContentView: View {
         .sheet(isPresented: $showVolumeRequirement) {
             VolumeRequirementSheet(
                 onReady: {
+                    // The sheet has checked the active audio session and the
+                    // user has explicitly confirmed the volume when unreadable.
+                    volumePreviouslyConfirmed = true
                     showVolumeRequirement = false
                     runPendingAudioAction()
                 },
@@ -436,9 +440,18 @@ struct ContentView: View {
     }
 
     private func requestAudioAction(_ action: AudioAction) {
-        let currentVolume = AVAudioSession.sharedInstance().outputVolume
+        guard !audioBusy else { return }
 
-        if currentVolume >= 0.35 && currentVolume <= 0.85 {
+        let session = AVAudioSession.sharedInstance()
+        // outputVolume may report an initial 0 before a media session is
+        // activated. Never trust that snapshot to block the user.
+        let detectedVolume = session.outputVolume
+        let isSpeaker = session.currentRoute.outputs.contains {
+            $0.portType == .builtInSpeaker
+        }
+
+        if volumePreviouslyConfirmed && isSpeaker &&
+            detectedVolume >= 0.35 && detectedVolume <= 0.85 {
             runAudioAction(action)
         } else {
             pendingAudioAction = action
@@ -448,14 +461,9 @@ struct ContentView: View {
 
     private func runPendingAudioAction() {
         guard let action = pendingAudioAction else { return }
-        // The user may change the hardware volume while the sheet is visible.
-        // Recheck at execution time instead of trusting an earlier UI snapshot.
-        let volume = AVAudioSession.sharedInstance().outputVolume
-        guard volume >= 0.35 && volume <= 0.85 else {
-            showVolumeRequirement = true
-            return
-        }
         pendingAudioAction = nil
+        // The sheet validates volume on the active playback route. Actual
+        // speaker route is checked again in AcousticEngine.prepare().
         runAudioAction(action)
     }
 
@@ -521,77 +529,157 @@ private struct VolumeRequirementSheet: View {
     let onReady: () -> Void
     let onCancel: () -> Void
 
-    @State private var volume = AVAudioSession.sharedInstance().outputVolume
-    private let timer = Timer.publish(every: 0.15, on: .main, in: .common).autoconnect()
+    @State private var volume: Float?
+    @State private var sessionReady = false
+    @State private var speakerConnected = true
+    @State private var manuallyConfirmed = false
+    @State private var sessionError: String?
+    private let timer = Timer.publish(every: 0.3, on: .main, in: .common).autoconnect()
+
+    // A reported 0 can mean either silence or that iOS has not supplied a
+    // reliable reading yet. Do not display a misleading "0%" in this case.
+    private var measuredVolume: Float? {
+        guard let volume, volume > 0.001 else { return nil }
+        return volume
+    }
+
+    private var isInRecommendedRange: Bool {
+        guard let measuredVolume else { return false }
+        return (0.35...0.85).contains(measuredVolume)
+    }
 
     private var isReady: Bool {
-        volume >= 0.35 && volume <= 0.85
+        sessionReady && speakerConnected &&
+            (isInRecommendedRange || (measuredVolume == nil && manuallyConfirmed))
+    }
+
+    private var volumeText: String {
+        guard let measuredVolume else { return "—" }
+        return "\(Int((measuredVolume * 100).rounded()))%"
+    }
+
+    private var volumeMessage: String {
+        if !sessionReady { return "Preparazione del controllo volume…" }
+        if !speakerConnected { return "Scollega cuffie, AirPods e dispositivi Bluetooth audio." }
+        guard let measuredVolume else {
+            return "iOS non restituisce una lettura affidabile. Regola il volume con il cursore o i tasti laterali, poi conferma manualmente."
+        }
+        if measuredVolume > 0.85 { return "Volume troppo alto: abbassalo per evitare suoni eccessivi." }
+        if measuredVolume < 0.35 { return "Aumenta gradualmente il volume verso il 50–70%." }
+        return "Volume nel range consentito. Puoi avviare la funzione."
     }
 
     var body: some View {
-        VStack(spacing: 20) {
-            ZStack {
-                Circle()
-                    .fill((isReady ? Color.green : Color.orange).opacity(0.12))
-                    .frame(width: 76, height: 76)
+        ScrollView {
+            VStack(spacing: 18) {
+                ZStack {
+                    Circle()
+                        .fill((isReady ? Color.green : Color.orange).opacity(0.12))
+                        .frame(width: 76, height: 76)
 
-                Image(systemName: isReady ? "speaker.wave.3.fill" : "speaker.wave.2.fill")
-                    .font(.system(size: 32, weight: .semibold))
-                    .foregroundStyle(isReady ? .green : .orange)
-            }
-
-            VStack(spacing: 8) {
-                Text(isReady ? LocalizedStringKey("Volume pronto") : LocalizedStringKey("Regola il volume"))
-                    .font(.title2.bold())
-
-                Text("Per un ascolto controllato imposta il volume fra il 35% e l'85% (consigliato 50–70%). La pulizia non richiede il volume massimo.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-
-            VStack(spacing: 8) {
-                HStack {
-                    Label("Volume iPhone", systemImage: "speaker.wave.2")
-                    Spacer()
-                    Text("\(Int((volume * 100).rounded()))%")
-                        .font(.headline.monospacedDigit())
+                    Image(systemName: isReady ? "speaker.wave.3.fill" : "speaker.wave.2.fill")
+                        .font(.system(size: 30, weight: .semibold))
                         .foregroundStyle(isReady ? .green : .orange)
                 }
 
-                SystemVolumeControl()
-                    .frame(height: 34)
-            }
-
-            Text("Non avvicinare l’iPhone all’orecchio durante i segnali.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-
-            HStack(spacing: 12) {
-                Button("Annulla", role: .cancel) {
-                    onCancel()
+                VStack(spacing: 8) {
+                    Text(isReady ? "Volume pronto" : "Regola il volume")
+                        .font(.title2.bold())
+                    Text("Imposta un volume moderato (50–70% consigliato). Non serve il volume massimo.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
 
-                Button {
-                    onReady()
-                } label: {
-                    Label("Avvia funzione", systemImage: "play.fill")
-                        .frame(maxWidth: .infinity)
+                VStack(spacing: 12) {
+                    HStack {
+                        Label("Volume iPhone", systemImage: "speaker.wave.2")
+                        Spacer()
+                        Text(volumeText)
+                            .font(.title3.weight(.semibold).monospacedDigit())
+                            .foregroundStyle(isReady ? .green : .orange)
+                    }
+                    SystemVolumeControl()
+                        .frame(height: 40)
+                        .accessibilityLabel("Regola volume di sistema")
+                    Text(volumeMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    if sessionReady && measuredVolume == nil {
+                        Toggle(isOn: $manuallyConfirmed) {
+                            Text("Confermo di aver impostato manualmente un volume moderato (50–70%).")
+                                .font(.footnote)
+                        }
+                        .tint(.cyan)
+                    }
+                    if let sessionError {
+                        Text(sessionError)
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .disabled(!isReady)
+                .padding(18)
+                .sonicGlass(cornerRadius: 22)
+
+                Text("Tieni l'iPhone lontano dall'orecchio e interrompi la riproduzione in caso di vibrazioni o distorsioni anomale.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+
+                HStack(spacing: 12) {
+                    Button("Annulla", role: .cancel, action: onCancel)
+                        .buttonStyle(.bordered)
+                        .controlSize(.large)
+
+                    Button(action: onReady) {
+                        Label("Avvia funzione", systemImage: "play.fill")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .disabled(!isReady)
+                }
             }
+            .padding(24)
         }
-        .padding(24)
-        .presentationDetents([.height(440)])
+        .presentationDetents([.height(550), .large])
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled()
-        .onReceive(timer) { _ in
-            volume = AVAudioSession.sharedInstance().outputVolume
+        .task { await activateVolumeSession() }
+        .onReceive(timer) { _ in refreshVolume() }
+    }
+
+    @MainActor
+    private func activateVolumeSession() async {
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default)
+            try session.setActive(true)
+            // Allow the audio route and MPVolumeView to synchronize before
+            // using outputVolume as a preflight indication.
+            try? await Task.sleep(for: .milliseconds(350))
+            sessionReady = true
+            refreshVolume()
+        } catch {
+            sessionError = "Impossibile attivare il controllo volume: \(error.localizedDescription)"
+            sessionReady = false
+        }
+    }
+
+    @MainActor
+    private func refreshVolume() {
+        guard sessionReady else { return }
+        let session = AVAudioSession.sharedInstance()
+        volume = session.outputVolume
+        speakerConnected = session.currentRoute.outputs.contains {
+            $0.portType == .builtInSpeaker
+        }
+        // A new reliable measurement takes precedence over an earlier
+        // manual acknowledgment.
+        if let v = measuredVolume, !(0.35...0.85).contains(v) {
+            manuallyConfirmed = false
         }
     }
 }
