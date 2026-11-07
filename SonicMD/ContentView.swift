@@ -144,7 +144,7 @@ struct ContentView: View {
                 .multilineTextAlignment(.center)
 
             ZStack {
-                Circle().fill(.ultraThinMaterial).overlay { Circle().stroke(.white.opacity(0.45), lineWidth: 1) }
+                Circle().fill(Color.clear).sonicGlassCircle()
                 Circle().stroke(Color.primary.opacity(0.06), lineWidth: 12)
                 Circle()
                     .trim(from: 0, to: max(engine.progress, engine.beforeIndex == nil ? 0.04 : 1))
@@ -487,6 +487,16 @@ struct ContentView: View {
 // Native Liquid Glass on iOS 26, with a material fallback on iOS 17–25.
 // Centralizing the treatment keeps the app functional on older supported devices.
 private extension View {
+    @ViewBuilder
+    func sonicGlassCircle() -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular, in: Circle())
+        } else {
+            self.background(.ultraThinMaterial, in: Circle())
+                .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+        }
+    }
+
     @ViewBuilder
     func sonicGlass(cornerRadius: CGFloat) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
