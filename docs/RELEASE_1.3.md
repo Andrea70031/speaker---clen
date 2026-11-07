@@ -30,3 +30,23 @@ Codemagic source branch: `feature/liquid-glass-restyle` (do not build `main` for
 - Final upload and App Store review are separate steps.
 
 **Important:** Acoustic response figures are comparative and depend on the room, volume, and phone positioning. Cleaning is not guaranteed. Do not charge or connect a wet phone; follow Apple liquid-exposure guidance.
+
+## Build 13 — Volume preflight + Liquid Glass refresh (November 7, 2026)
+- Audio preflight now activates a playback session before reading the output volume. A stale zero is shown as unavailable (—), not falsely as 0%.
+- On an unavailable reading, users can confirm they have manually selected a moderate volume; a detected volume outside 35–85% still requires adjustment. The built-in speaker route remains mandatory.
+- New animated Aurora backdrop (respects Reduce Motion), acoustic response dial, native iOS 26 glass buttons, interactive rescue cards, and coordinated glass metric containers.
+- Native Liquid Glass is only available on iOS 26+; earlier iOS versions retain readable material-based controls.
+- App Store Connect build number increased to 13 to avoid the duplicate build 12.
+
+### Regression checklist for build 13 (must be done on physical iPhone)
+- [ ] Test the volume sheet after cold launch when `outputVolume` initially reports 0: show “—” and allow explicit manual confirmation.
+- [ ] Adjust volume with the hardware buttons and the native slider; check the reading refreshes.
+- [ ] Verify a detected value over 85% blocks “Avvia funzione” until lowered.
+- [ ] Verify a detected value under 35% blocks until raised.
+- [ ] Verify plugged-in headphones, AirPods and Bluetooth output are rejected.
+- [ ] Run Smart Scan, Auto Clean, manual rescue modes, and Stop.
+- [ ] Verify iOS 26 native glass, text contrast, and dark/light mode. Verify iOS 17–25 fallback if available.
+- [ ] Verify UMP/ATT consent, banner behavior and local history.
+- [ ] Confirm the signed IPA says `CFBundleShortVersionString=1.3.0` and `CFBundleVersion=13` before TestFlight upload.
+
+Do not merge into main or publish to the App Store before successful device QA.
