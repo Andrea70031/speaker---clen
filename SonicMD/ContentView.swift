@@ -313,15 +313,18 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Smart Scan").font(.title3.bold())
-                        Text("Misura la risposta locale e crea un riferimento comparativo.")
+                        Text("Smart Scan")
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                        Text("Analisi acustica locale e confronto nel tempo.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
                     Image(systemName: "waveform.path.ecg")
-                        .font(.title2)
-                        .foregroundStyle(.blue)
+                        .font(.system(size: 23, weight: .medium))
+                        .foregroundStyle(.cyan)
+                        .frame(width: 48, height: 48)
+                        .sonicGlassCapsule(tint: .cyan)
                 }
 
                 ProgressView(value: engine.progress).tint(.blue)
@@ -339,37 +342,39 @@ struct ContentView: View {
                     )
                     .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .sonicPrimaryButton()
                 .controlSize(.large)
                 .disabled(audioBusy)
             }
-            .padding(18)
-            .sonicGlass(cornerRadius: 26)
+            .padding(20)
+            .sonicGlass(cornerRadius: 28)
 
             Button {
                 requestAudioAction(.autoClean)
             } label: {
                 HStack(spacing: 12) {
-                    Image(systemName: "sparkles").font(.title2)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Sonic Auto Clean").font(.headline)
-                        Text("Un tocco: misura → pulizia → verifica")
-                            .font(.caption)
-                            .opacity(0.82)
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 25, weight: .medium))
+                        .frame(width: 48, height: 48)
+                        .background(.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 15))
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("Sonic Auto Clean")
+                            .font(.system(size: 19, weight: .bold, design: .rounded))
+                        Text("Misura  ·  Pulisci  ·  Verifica")
+                            .font(.caption.weight(.medium))
+                            .opacity(0.9)
                     }
-                    Spacer()
-                    Image(systemName: "chevron.right")
+                    Spacer(minLength: 3)
+                    Image(systemName: "arrow.up.right")
+                        .font(.headline)
                 }
-                .padding(18)
+                .padding(19)
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.plain)
             .foregroundStyle(.white)
-            .background(
-                LinearGradient(colors: [.cyan, .blue, .indigo], startPoint: .topLeading, endPoint: .bottomTrailing),
-                in: RoundedRectangle(cornerRadius: 24, style: .continuous)
-            )
-            .shadow(color: .blue.opacity(0.18), radius: 20, y: 10)
+            .sonicAccentGlass(cornerRadius: 25)
+            .shadow(color: .blue.opacity(0.23), radius: 24, y: 12)
             .disabled(audioBusy)
         }
     }
@@ -496,7 +501,7 @@ struct ContentView: View {
             }
             .padding(15)
             .frame(maxWidth: .infinity)
-            .sonicGlass(cornerRadius: 20)
+            .sonicInteractiveGlass(cornerRadius: 20)
         }
         .buttonStyle(.plain)
         .disabled(audioBusy)
@@ -569,6 +574,44 @@ private extension View {
     }
 
     @ViewBuilder
+    func sonicPrimaryButton() -> some View {
+        if #available(iOS 26.0, *) {
+            self.buttonStyle(.glassProminent)
+        } else {
+            self.buttonStyle(.borderedProminent)
+        }
+    }
+
+    @ViewBuilder
+    func sonicAccentGlass(cornerRadius: CGFloat) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular.tint(Color.blue.opacity(0.85)).interactive(), in: shape)
+        } else {
+            self.background(
+                LinearGradient(
+                    colors: [.cyan, .blue, .indigo],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                in: shape
+            )
+            .overlay(shape.strokeBorder(.white.opacity(0.25), lineWidth: 1))
+        }
+    }
+
+    @ViewBuilder
+    func sonicInteractiveGlass(cornerRadius: CGFloat) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular.interactive(), in: shape)
+        } else {
+            self.background(.ultraThinMaterial, in: shape)
+                .overlay(shape.strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+        }
+    }
+
+    @ViewBuilder
     func sonicGlassCapsule(tint: Color) -> some View {
         if #available(iOS 26.0, *) {
             self.glassEffect(.regular.tint(tint.opacity(0.13)), in: Capsule())
@@ -586,6 +629,83 @@ private extension View {
         } else {
             self.background(.thinMaterial, in: shape)
                 .overlay(shape.strokeBorder(Color.primary.opacity(0.07), lineWidth: 0.7))
+        }
+    }
+}
+
+// An atmospheric backdrop gives native glass something real to refract.
+// Motion respects the system Reduce Motion setting.
+private struct SonicAuroraBackdrop: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var drift = false
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack {
+                (colorScheme == .dark
+                    ? Color(red: 0.035, green: 0.055, blue: 0.11)
+                    : Color(red: 0.95, green: 0.97, blue: 1.0))
+
+                LinearGradient(
+                    colors: [
+                        Color.cyan.opacity(colorScheme == .dark ? 0.16 : 0.10),
+                        Color.clear,
+                        Color.indigo.opacity(colorScheme == .dark ? 0.15 : 0.09)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [.cyan.opacity(colorScheme == .dark ? 0.53 : 0.34), .clear],
+                            center: .center,
+                            startRadius: 16,
+                            endRadius: 240
+                        )
+                    )
+                    .frame(width: 480, height: 480)
+                    .blur(radius: 28)
+                    .offset(x: drift ? 94 : -70, y: drift ? -185 : -280)
+
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [.indigo.opacity(colorScheme == .dark ? 0.46 : 0.25), .clear],
+                            center: .center,
+                            startRadius: 20,
+                            endRadius: 270
+                        )
+                    )
+                    .frame(width: 530, height: 530)
+                    .blur(radius: 42)
+                    .offset(x: drift ? -120 : 90, y: proxy.size.height * 0.46)
+
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [.mint.opacity(colorScheme == .dark ? 0.18 : 0.12), .clear],
+                            center: .center,
+                            startRadius: 12,
+                            endRadius: 200
+                        )
+                    )
+                    .frame(width: 400, height: 400)
+                    .blur(radius: 26)
+                    .offset(x: drift ? -80 : 100, y: proxy.size.height * 0.04)
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .clipped()
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 11).repeatForever(autoreverses: true)) {
+                drift = true
+            }
         }
     }
 }
