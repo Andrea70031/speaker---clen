@@ -20,32 +20,25 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                LinearGradient(
-                    colors: [
-                        Color(.systemGroupedBackground),
-                        Color.cyan.opacity(0.12),
-                        Color(.systemGroupedBackground)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+                SonicAuroraBackdrop()
 
                 ScrollView {
-                    VStack(spacing: 22) {
+                    VStack(spacing: 26) {
                         hero
                         quickStatus
-                        volumeReminder
-                        if audioBusy { stopButton }
                         mainActions
+                        if audioBusy { stopButton }
                         if !engine.autoConclusion.isEmpty { autoResultCard }
                         rescueSection
+                        volumeReminder
                         insightsCard
                         footer
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 32)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 36)
                 }
+                .scrollIndicators(.hidden)
             }
             .navigationTitle("Sonic MD")
             .navigationBarTitleDisplayMode(.inline)
@@ -133,62 +126,120 @@ struct ContentView: View {
     }
 
     private var hero: some View {
-        VStack(spacing: 14) {
-            Text("ACOUSTIC RESPONSE SYSTEM")
-                .font(.caption2.weight(.bold))
-                .tracking(1.6)
-                .foregroundStyle(.secondary)
+        VStack(spacing: 12) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(audioBusy ? Color.cyan : Color.green)
+                    .frame(width: 7, height: 7)
+                Text(audioBusy ? "SESSIONE ATTIVA" : "SONIC / ACOUSTIC LAB")
+                    .tracking(2)
+            }
+            .font(.system(size: 10, weight: .bold, design: .rounded))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 13)
+            .padding(.vertical, 9)
+            .sonicGlassCapsule(tint: .cyan)
 
             Text("Speaker Health")
-                .font(.system(size: 36, weight: .bold, design: .rounded))
+                .font(.system(size: 38, weight: .bold, design: .rounded))
+                .tracking(-1.5)
+                .minimumScaleFactor(0.75)
+                .lineLimit(1)
 
-            Text("Analizza, pulisci e confronta la risposta acustica del tuo iPhone.")
+            Text("Il suono, sotto controllo.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
 
             ZStack {
-                Circle().fill(Color.clear).sonicGlassCircle()
-                Circle().stroke(Color.primary.opacity(0.06), lineWidth: 12)
                 Circle()
-                    .trim(from: 0, to: max(engine.progress, engine.beforeIndex == nil ? 0.04 : 1))
+                    .fill(
+                        RadialGradient(
+                            colors: [.cyan.opacity(0.46), .indigo.opacity(0.22), .clear],
+                            center: .center,
+                            startRadius: 26,
+                            endRadius: 153
+                        )
+                    )
+                    .frame(width: 298, height: 298)
+                    .blur(radius: 22)
+
+                Circle()
+                    .strokeBorder(.white.opacity(0.12), lineWidth: 1)
+                    .frame(width: 264, height: 264)
+
+                Circle()
+                    .strokeBorder(.white.opacity(0.22), lineWidth: 1)
+                    .frame(width: 242, height: 242)
+
+                Circle()
+                    .fill(Color.clear)
+                    .frame(width: 218, height: 218)
+                    .sonicGlassCircle()
+
+                Circle()
+                    .stroke(Color.primary.opacity(0.07), lineWidth: 11)
+                    .frame(width: 200, height: 200)
+
+                Circle()
+                    .trim(from: 0, to: max(
+                        0.035,
+                        min(1, audioBusy ? engine.progress : (engine.beforeIndex == nil ? 0.04 : 1))
+                    ))
                     .stroke(
                         AngularGradient(
-                            colors: [.cyan, .blue, .indigo, .cyan],
+                            colors: [.mint, .cyan, .blue, .indigo, .cyan],
                             center: .center
                         ),
-                        style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                        style: StrokeStyle(lineWidth: 11, lineCap: .round)
                     )
+                    .frame(width: 200, height: 200)
                     .rotationEffect(.degrees(-90))
-                    .animation(.easeInOut(duration: 0.35), value: engine.progress)
+                    .animation(.smooth(duration: 0.45), value: engine.progress)
 
-                VStack(spacing: 5) {
+                VStack(spacing: 7) {
+                    Image(systemName: audioBusy ? "waveform" : "waveform.path")
+                        .font(.system(size: 20, weight: .light))
+                        .foregroundStyle(.cyan)
+                        .symbolEffect(.variableColor.iterative, options: .repeating, isActive: audioBusy)
+
                     Text(scoreText)
-                        .font(.system(size: 54, weight: .bold, design: .rounded))
+                        .font(.system(size: 62, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
                         .contentTransition(.numericText())
 
                     Text(scoreCaption)
-                        .font(.caption2.weight(.semibold))
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
                         .foregroundStyle(.secondary)
-                        .tracking(0.8)
+                        .tracking(1.2)
                 }
             }
-            .frame(width: 218, height: 218)
-            .shadow(color: .cyan.opacity(0.22), radius: 30, y: 14)
+            .frame(height: 292)
+            .accessibilityElement(children: .combine)
 
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 statusPill(
-                    icon: audioBusy ? "waveform" : "checkmark.circle.fill",
+                    icon: audioBusy ? "waveform" : "checkmark.seal.fill",
                     text: audioBusy ? "Analisi in corso" : "Sistema pronto",
-                    color: audioBusy ? .blue : .green
+                    color: audioBusy ? .cyan : .green
                 )
-                statusPill(icon: "speaker.wave.2.fill", text: "Speaker", color: .cyan)
+                statusPill(icon: "speaker.wave.2.fill", text: "iPhone Speaker", color: .blue)
             }
         }
-        .padding(.top, 6)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 12)
     }
 
     private var quickStatus: some View {
+        Group {
+            if #available(iOS 26.0, *) {
+                GlassEffectContainer(spacing: 8) { metricRow }
+            } else {
+                metricRow
+            }
+        }
+    }
+
+    private var metricRow: some View {
         HStack(spacing: 10) {
             metricCard(title: "PRIMA", value: engine.beforeIndex.map(String.init) ?? "—", icon: "circle.dashed")
             metricCard(title: "DOPO", value: engine.afterIndex.map(String.init) ?? "—", icon: "checkmark.circle")
@@ -392,22 +443,34 @@ struct ContentView: View {
 
     private func statusPill(icon: String, text: LocalizedStringKey, color: Color) -> some View {
         Label(text, systemImage: icon)
-            .font(.caption.weight(.semibold))
-            .padding(.horizontal, 11)
-            .padding(.vertical, 7)
-            .background(color.opacity(0.10), in: Capsule())
+            .font(.system(size: 11, weight: .semibold, design: .rounded))
             .foregroundStyle(color)
+            .padding(.horizontal, 13)
+            .padding(.vertical, 10)
+            .sonicGlassCapsule(tint: color)
     }
 
     private func metricCard(title: LocalizedStringKey, value: String, icon: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: icon).font(.caption).foregroundStyle(.secondary)
-            Text(value).font(.title3.bold()).contentTransition(.numericText())
-            Text(title).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(title)
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .tracking(1)
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 1)
+                Image(systemName: icon)
+                    .font(.caption)
+                    .foregroundStyle(.cyan)
+            }
+            Text(value)
+                .font(.system(size: 23, weight: .semibold, design: .rounded))
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+                .contentTransition(.numericText())
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .sonicGlass(cornerRadius: 20)
+        .padding(16)
+        .sonicGlass(cornerRadius: 22)
     }
 
     private func rescueCard(
@@ -502,6 +565,16 @@ private extension View {
         } else {
             self.background(.ultraThinMaterial, in: Circle())
                 .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+        }
+    }
+
+    @ViewBuilder
+    func sonicGlassCapsule(tint: Color) -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular.tint(tint.opacity(0.13)), in: Capsule())
+        } else {
+            self.background(.ultraThinMaterial, in: Capsule())
+                .overlay(Capsule().strokeBorder(tint.opacity(0.16), lineWidth: 0.8))
         }
     }
 
