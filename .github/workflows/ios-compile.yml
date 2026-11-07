@@ -1,0 +1,37 @@
+name: Sonic MD iOS compile
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare build tools
+        run: |
+          brew install xcodegen librsvg imagemagick
+      - name: Prepare App Store icon
+        run: |
+          rsvg-convert -w 1024 -h 1024 SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.svg -o /tmp/AppIcon-rgba.png
+          magick /tmp/AppIcon-rgba.png -background white -alpha remove -alpha off PNG24:SonicMD/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+      - name: Generate Xcode project
+        run: xcodegen generate --spec project.yml
+      - name: Verify project metadata
+        run: |
+          xcodebuild -version
+          plutil -lint SonicMD/Info.plist
+          xcodebuild -project SonicMD.xcodeproj -list
+      - name: Compile for iOS Simulator
+        run: |
+          set -o pipefail
+          xcodebuild build -project SonicMD.xcodeproj -scheme SonicMD -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -configuration Debug CODE_SIGNING_ALLOWED=NO | tee /tmp/sonicmd-build.log
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonicmd-build-log
+          path: /tmp/sonicmd-build.log
+          if-no-files-found: ignore
