@@ -218,7 +218,7 @@ struct ContentView: View {
             Spacer(minLength: 0)
         }
         .padding(16)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .sonicGlass(cornerRadius: 22)
         .overlay {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .stroke(.orange.opacity(0.18), lineWidth: 1)
@@ -250,7 +250,7 @@ struct ContentView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .sonicGlass(cornerRadius: 22)
     }
 
     private var mainActions: some View {
@@ -289,7 +289,7 @@ struct ContentView: View {
                 .disabled(audioBusy)
             }
             .padding(18)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .sonicGlass(cornerRadius: 26)
 
             Button {
                 requestAudioAction(.autoClean)
@@ -360,7 +360,7 @@ struct ContentView: View {
             insightRow(icon: "waveform", title: "Bande di test", value: "8 frequenze")
         }
         .padding(18)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .sonicGlass(cornerRadius: 24)
     }
 
     private var footer: some View {
@@ -403,7 +403,7 @@ struct ContentView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .sonicGlass(cornerRadius: 20)
     }
 
     private func rescueCard(
@@ -429,7 +429,7 @@ struct ContentView: View {
             }
             .padding(15)
             .frame(maxWidth: .infinity)
-            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .sonicGlass(cornerRadius: 20)
         }
         .buttonStyle(.plain)
         .disabled(audioBusy)
@@ -481,6 +481,21 @@ struct ContentView: View {
             Text(value).font(.subheadline.weight(.semibold))
         }
         .font(.subheadline)
+    }
+}
+
+// Native Liquid Glass on iOS 26, with a material fallback on iOS 17–25.
+// Centralizing the treatment keeps the app functional on older supported devices.
+private extension View {
+    @ViewBuilder
+    func sonicGlass(cornerRadius: CGFloat) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular, in: shape)
+        } else {
+            self.background(.thinMaterial, in: shape)
+                .overlay(shape.strokeBorder(Color.primary.opacity(0.07), lineWidth: 0.7))
+        }
     }
 }
 
