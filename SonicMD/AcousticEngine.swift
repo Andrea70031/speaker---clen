@@ -118,11 +118,13 @@ final class AcousticEngine: ObservableObject {
     func measure(reference: Bool) async {
         guard !isRunning else { return }
         if !isAutoWorkflow { stopRequested = false }
+        // Mark busy before the first suspension: a second tap must not start
+        // another AVAudioEngine session while microphone permission is pending.
+        isRunning = true
 
         do {
             try await prepare()
             try checkCancellation()
-            isRunning = true
             isMeasuring = true
             progress = 0
             status = reference
@@ -273,11 +275,11 @@ final class AcousticEngine: ObservableObject {
         guard !isRunning else { return }
         if !isAutoWorkflow { stopRequested = false }
         lastCleanSucceeded = false
+        isRunning = true
 
         do {
             try await prepare(requiresMicrophone: false)
             try checkCancellation()
-            isRunning = true
             progress = 0
             status = String(
                 format: NSLocalizedString("%@ in corso…", comment: ""),
