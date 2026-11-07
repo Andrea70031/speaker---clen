@@ -448,6 +448,13 @@ struct ContentView: View {
 
     private func runPendingAudioAction() {
         guard let action = pendingAudioAction else { return }
+        // The user may change the hardware volume while the sheet is visible.
+        // Recheck at execution time instead of trusting an earlier UI snapshot.
+        let volume = AVAudioSession.sharedInstance().outputVolume
+        guard volume >= 0.35 && volume <= 0.85 else {
+            showVolumeRequirement = true
+            return
+        }
         pendingAudioAction = nil
         runAudioAction(action)
     }
