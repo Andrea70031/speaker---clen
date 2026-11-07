@@ -132,7 +132,7 @@ workflows:
           SETTINGS=$(xcodebuild -project SonicMD.xcodeproj -scheme SonicMD -showBuildSettings)
           echo "$SETTINGS" | grep -E 'TARGETED_DEVICE_FAMILY = 1$'
           echo "$SETTINGS" | grep -E 'INFOPLIST_FILE = SonicMD/Info.plist$'
-          echo "$SETTINGS" | grep -E 'CURRENT_PROJECT_VERSION = 12$'
+          echo "$SETTINGS" | grep -E 'CURRENT_PROJECT_VERSION = 13$'
       - name: Apply signing profiles
         script: |
           set -euo pipefail
@@ -173,7 +173,7 @@ workflows:
           wanted = {
               'CFBundleIdentifier': 'com.andrea70031.sonicmd',
               'CFBundleShortVersionString': '1.3.0',
-              'CFBundleVersion': '12',
+              'CFBundleVersion': '13',
               'CFBundleLocalizations': ['it', 'en'],
               'UIRequiresFullScreen': True,
               'GADApplicationIdentifier': 'ca-app-pub-2013766674591751~6839959210',
