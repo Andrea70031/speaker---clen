@@ -1,6 +1,6 @@
 # Sonic MD 1.3 — Release notes
 
-Target: iOS 17+, iPhone. Version 1.3.0, build 12.
+Target: iOS 17+, iPhone. Version 1.3.0, build 13.
 Codemagic source branch: `feature/liquid-glass-restyle` (do not build `main` for this TestFlight release).
 
 ## Added
@@ -15,7 +15,7 @@ Codemagic source branch: `feature/liquid-glass-restyle` (do not build `main` for
 - AdMob banner suppressed while audio operations are active. Google UMP/ATT and existing identifiers unchanged.
 
 ## Build and release
-- `project.yml`: `MARKETING_VERSION: 1.3.0`, `CURRENT_PROJECT_VERSION: 12`.
+- `project.yml`: `MARKETING_VERSION: 1.3.0`, `CURRENT_PROJECT_VERSION: 13`.
 - `codemagic.yaml`: release workflow label and final IPA preflight updated.
 - Launch `ios-compile-check` in Codemagic from `feature/liquid-glass-restyle` first. Then use `ios-testflight` with configured Apple signing/integration.
 
